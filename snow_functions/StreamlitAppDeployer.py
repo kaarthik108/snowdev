@@ -1,8 +1,8 @@
 from snow_functions.SnowConnect import SnowflakeConnection
 import os
 
-class StreamlitAppDeployer(SnowflakeConnection):
 
+class StreamlitAppDeployer(SnowflakeConnection):
     def __init__(self):
         super().__init__()
         self.session = self.get_session()
@@ -54,7 +54,7 @@ class StreamlitAppDeployer(SnowflakeConnection):
                 f" You are not authorized to grant usage on {streamlit_name} to role ANALYST {Exception}"
             )
 
-    def run_streamlit(self, directory):
+    def handler_streamlit(self, directory):
         directory_parts = os.path.normpath(directory).split(os.sep)
         func_name = directory_parts[-2]
         streamlit_name = func_name.replace("_", " ").capitalize()

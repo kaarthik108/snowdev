@@ -1,11 +1,16 @@
 import argparse
 import os
-from dataclasses import dataclass
 import subprocess
 from typing import Optional
 
-from pydantic import BaseModel, validator
-from snow_functions import SnowConnect, SnowHelper, SnowRegister, StreamlitAppDeployer, TaskRunner
+from pydantic import BaseModel
+from snow_functions import (
+    SnowHelper,
+    SnowRegister,
+    StreamlitAppDeployer,
+    TaskRunner,
+)
+
 
 class DeploymentArguments(BaseModel):
     udf: Optional[str]
@@ -16,47 +21,123 @@ class DeploymentArguments(BaseModel):
     test: bool = False
     upload: Optional[str]
 
-    @validator("udf", "sproc", "stream", "pipe")
-    def validate_path(cls, v, field):
-        if v is not None:
-            path_map = {
-                "udf": "src/udf/",
-                "sproc": "src/stored_procs/",
-                "stream": "src/streamlit/",
-            }
-            path_prefix = path_map.get(field.name, "")
-            if not os.path.exists(path_prefix + v):
-                raise ValueError(f"Provided path does not exist: {path_prefix + v}")
-        return v
 
-
-@dataclass
 class DeploymentManager:
-    args: DeploymentArguments
+    UDF_PATH = "src/udf/"
+    SPROC_PATH = "src/stored_procs/"
+    STREAM_PATH = "src/streamlit/"
 
+    def __init__(self, args):
+        self.args = args
+        self.stage_name = "SNOWDEV"
+        self.snow_deploy = SnowRegister.snowflakeregister()
+        self.session = self.snow_deploy.session
+        self.current_database = self.session.sql("SELECT current_database()").collect()[0][0]
+        self.current_schema = self.session.sql("SELECT current_schema()").collect()[0][0]
+
+    def handle_deployment_error(self, e, deployment_type):
+        raise Exception(f"Error deploying {deployment_type}: {e}")
+    
     def main(self):
         if self.args.test:
             self.test_locally()
             return
+
         if self.args.upload == "static":
             self.upload_static()
+            return
 
-        if self.args.udf:
-            self.deploy_udf("src/udf/" + self.args.udf + "/app.py")
-        elif self.args.sproc:
-            self.deploy_sproc("src/stored_procs/" + self.args.sproc + "/app.py")
-        elif self.args.stream:
-            self.deploy_streamlit(
-                "src/streamlit/" + self.args.stream + "/streamlit_app.py"
+        deployment_path_map = {
+            "udf": self.UDF_PATH,
+            "sproc": self.SPROC_PATH,
+            "stream": self.STREAM_PATH,
+        }
+
+        for arg_key, path in deployment_path_map.items():
+            arg_value = getattr(self.args, arg_key, None)
+            if arg_value:
+                self.deploy(arg_key, f"{path}{arg_value}/app.py")
+                break
+        else:
+            if self.args.task:
+                self.deploy_task(self.args.task)
+            elif self.args.pipe:
+                self.deploy_pipe(self.args.pipe)
+
+    def deploy(self, deployment_type, filepath):
+        if deployment_type in ["udf", "sproc"]:
+            is_sproc = deployment_type == "sproc"
+            self.deploy_function(filepath, is_sproc)
+        elif deployment_type == "stream":
+            self.deploy_streamlit(filepath)
+
+    def deploy_function(self, filepath, is_sproc):
+        dir_path, filename = os.path.split(filepath)
+        function_name = os.path.basename(dir_path)
+
+        packages = self.get_packages(dir_path)
+        imports = self.get_imports(dir_path)
+
+        try:
+            self.snow_deploy.main(
+                func=filepath,
+                function_name=function_name,
+                stage_location=self.stage_name,
+                packages=packages,
+                imports=imports,
+                is_sproc=is_sproc,
             )
-        elif self.args.task:
-            self.deploy_task(self.args.task)
-        elif self.args.pipe:
-            self.deploy_pipe(self.args.pipe)
+            print(
+                f"Deployed {'stored procedure' if is_sproc else 'UDF'} {function_name} successfully."
+            )
+        except Exception as e:
+            self.handle_deployment_error(e, 'stored procedure' if is_sproc else 'UDF')
+
+
+    def deploy_streamlit(self, filepath):
+        if not self.is_current_database_analytics():
+            print("You must be in the ANALYTICS database to deploy a Streamlit app.")
+            return
+
+        deployer = StreamlitAppDeployer()
+        try:
+            deployer.run_streamlit(directory=filepath)
+            print(f"Deployed Streamlit app {filepath} successfully.")
+        except Exception as e:
+            self.handle_deployment_error(e, "Streamlit app")
+
+    def deploy_task(self, taskname):
+        if not self.is_current_database_analytics():
+            print("You must be in the ANALYTICS database to run/schedule a task.")
+            return
+
+        runner = TaskRunner(taskname)
+        try:
+            runner.run_task()
+            print(f"Deployed task {taskname} successfully.")
+        except Exception as e:
+            self.handle_deployment_error(e, "task")
+
+    def is_current_database_analytics(self):
+        database = self.session.sql("SELECT current_database()").collect()
+        return database[0][0] == "ANALYTICS"
+
+    def get_packages(self, dir_path):
+        return SnowHelper.SnowHelper.get_packages_from_toml(dir_path)
+
+    def get_imports(self, dir_path):
+        try:
+            return SnowHelper.SnowHelper.get_imports(dir_path)
+        except Exception:
+            print("No imports found.")
+            return None
 
     def test_locally(self):
         if self.args.sproc:
-            dir_path = f"src/stored_procs/{self.args.sproc}/"
+            dir_path = f"{self.SPROC_PATH}{self.args.sproc}/"
+            self.run_poetry_script(dir_path)
+        elif self.args.udf:
+            dir_path = f"{self.UDF_PATH}{self.args.udf}/"
             self.run_poetry_script(dir_path)
 
     def run_poetry_script(self, dir_path):
@@ -64,153 +145,42 @@ class DeploymentManager:
         subprocess.call(["poetry", "install"])
         subprocess.call(["poetry", "run", "python", "app.py"])
 
-    def deploy_udf(self, filepath):
-        dir_path, filename = os.path.split(filepath)
-        FUNCTION_NAME = os.path.basename(dir_path)
-
-        STAGE_LOCATION = "snowdev"
-        PACKAGES = SnowHelper.SnowHelper.get_packages_from_toml(dir_path)
-        try:
-            IMPORTS = SnowHelper.SnowHelper.get_imports(dir_path)
-        except Exception:
-            print("No imports found.")
-            IMPORTS = None
-
-        print(f"packages: {PACKAGES}")
-        SNOW_DEPLOY = SnowRegister.snowflakeregister()
-        try:
-            SNOW_DEPLOY.main(
-                func=filepath,
-                function_name=FUNCTION_NAME,
-                stage_location=STAGE_LOCATION,
-                packages=PACKAGES,
-                imports=IMPORTS,
-                is_sproc=False,
-            )
-            print(f"Deployed UDF {FUNCTION_NAME} successfully.")
-        except Exception as e:
-            raise Exception(f"Error deploying UDF: {e}")
-
-    def deploy_sproc(self, filepath):
-        dir_path, filename = os.path.split(filepath)
-        STORED_PROC_NAME = os.path.basename(dir_path)
-        STAGE_LOCATION = "snowdev"
-        PACKAGES = SnowHelper.SnowHelper.get_packages_from_toml(dir_path)
-        SNOW_DEPLOY = SnowRegister.snowflakeregister()
-        try:
-            IMPORTS = SnowHelper.SnowHelper.get_imports(dir_path)
-        except Exception:
-            print("No imports found.")
-            IMPORTS = None
-
-        try:
-            SNOW_DEPLOY.main(
-                func=filepath,
-                function_name=STORED_PROC_NAME,
-                stage_location=STAGE_LOCATION,
-                packages=PACKAGES,
-                is_sproc=True,
-                imports=IMPORTS,
-            )
-
-            print(f"Deployed stored procedure {STORED_PROC_NAME} successfully.")
-        except Exception as e:
-            raise Exception(f"Error deploying stored procedure: {e}")
-
-    def deploy_streamlit(self, filepath):
-        dir_path, filename = os.path.split(filepath)
-        deployer = StreamlitAppDeployer()
-        session = SnowConnect.SnowflakeConnection().get_session()
-        database = session.sql(
-            """
-            SELECT 
-                 current_database()
-            """
-        ).collect()
-        if database[0][0] == "ANALYTICS":
-            try:
-                deployer.run_streamlit(directory=filepath)
-
-                print(f"Deployed Streamlit app {filepath} successfully.")
-            except Exception as e:
-                raise Exception(f"Error deploying Streamlit app: {e}")
-        else:
-            print("You must be in the ANALYTICS database to deploy a Streamlit app.")
-
-    def deploy_task(self, taskname):
-        runner = TaskRunner(taskname)
-        session = SnowConnect.SnowflakeConnection().get_session()
-        database = session.sql(
-            """
-            SELECT 
-                 current_database()
-            """
-        ).collect()
-
-        if database[0][0] == "ANALYTICS":
-            try:
-                runner.run_task()
-                print(f"Deployed task {taskname} successfully.")
-            except Exception as e:
-                raise Exception(f"Error deploying task: {e}")  # noqa: B904
-        else:
-            print("You must be in the ANALYTICS database to run/schedule a task.")
-
-    def get_current_environment_info(self):
-        snowConnect = SnowConnect.SnowflakeConnection()
-        snowConnect.get_session()
-        env_info = snowConnect._get_snowflake_environment_info()
-
-        return {
-            'user': env_info[0][0],
-            'role': env_info[0][1],
-            'database': env_info[0][2],
-            'schema': env_info[0][3],
-            'version': env_info[0][4],
-            'warehouse': env_info[0][5]
-        }
-
     def stage_exists(self, stage_name):
         try:
-            # Assuming SnowflakeConnection's get_session() returns a Snowflake session
-            session = SnowConnect.SnowflakeConnection().get_session()
             query = f"DESC STAGE {stage_name};"
-            print(f"Query: {query}")
-            session.sql(query).collect()
+            self.session.sql(query).collect()
             return True
         except:
             return False
-    
+
     def create_stage(self, stage_name):
         try:
-            session = SnowConnect.SnowflakeConnection().get_session()
             query = f"CREATE STAGE {stage_name};"
-            session.sql(query)
+            self.session.sql(query).collect()
             print(f"Stage {stage_name} created successfully.")
         except Exception as e:
             print(f"Error creating stage {stage_name}: {e}")
 
-        
     def upload_static(self):
-        static_folder = "static"  # assuming the static folder is at the root level of your project
-        
-        env_info = self.get_current_environment_info()
-        STAGE_LOCATION = f"{env_info['database']}.{env_info['schema']}.SNOWDEV"
-        SNOW_DEPLOY = SnowRegister.snowflakeregister()
-        print(f"Current stage: {STAGE_LOCATION}")
-        if not self.stage_exists(STAGE_LOCATION):
-            print(f"Stage {STAGE_LOCATION} does not exist. Creating it...")
-            self.create_stage(STAGE_LOCATION)
+        static_folder = "static"
+        stage_location = f"{self.current_database}.{self.current_schema}.{self.stage_name}"
+
+        if not self.stage_exists(stage_location):
+            print(f"Stage {stage_location} does not exist. Creating it...")
+            self.create_stage(stage_location)
 
         if os.path.isdir(static_folder) and len(os.listdir(static_folder)) > 0:
             for root, dirs, files in os.walk(static_folder):
                 for file in files:
-                    print(f"Uploading file {file} to stage {STAGE_LOCATION}")
+                    print(f"Uploading file {file} to stage {stage_location}")
                     file_path = os.path.join(root, file)
-                    remote_path = f"@{STAGE_LOCATION}/static/"
-                    SNOW_DEPLOY.session.file.put(
+                    remote_path = f"@{stage_location}/static/"
+                    self.session.file.put(
                         file_path, remote_path, overwrite=True, auto_compress=False
                     )
+
+    def deploy_pipe(self, pipe_name):
+        pass
 
 
 def main():
@@ -241,7 +211,9 @@ def main():
     parser.add_argument(
         "--upload",
         type=str,
-        choices=["static"],  # expand this list if you have other things to upload in the future
+        choices=[
+            "static"
+        ],  # expand this list if you have other things to upload in the future
         help="Specify what to upload (e.g., static).",
     )
 

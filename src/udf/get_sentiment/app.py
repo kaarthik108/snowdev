@@ -4,6 +4,7 @@ import cachetools
 import pandas
 
 from snowflake.snowpark.types import PandasSeries
+
 # from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
@@ -30,7 +31,7 @@ def load_model(filename):
         return None
 
 
-def run(df: str) -> str:
+def handler(df: str) -> str:
     """
     This function is used to get sentiment score for a given text
 
@@ -48,5 +49,13 @@ def run(df: str) -> str:
     # return df[0].apply(lambda x: sia.polarity_scores(str(x))["compound"])
     return df
 
+
 # run._sf_vectorized_input = pandas.DataFrame
 # run._sf_max_batch_size = 500
+
+# Local testing
+if __name__ == "__main__":
+    from snow_functions import SnowConnect
+
+    session = SnowConnect.SnowflakeConnection().get_session()
+    print(handler("test"))

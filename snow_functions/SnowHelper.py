@@ -1,5 +1,6 @@
 import toml
 
+
 class SnowHelper:
     @staticmethod
     def get_packages_from_requirements(path):
@@ -20,10 +21,12 @@ class SnowHelper:
     def get_packages_from_toml(path):
         with open(f"{path}/app.toml", "r") as file:
             data = toml.load(file)
-            dependencies = data.get('tool', {}).get('poetry', {}).get('dependencies', {})
-            
+            dependencies = (
+                data.get("tool", {}).get("poetry", {}).get("dependencies", {})
+            )
+
             # Exclude python from the packages
-            if 'python' in dependencies:
-                del dependencies['python']
-            
+            if "python" in dependencies:
+                del dependencies["python"]
+
             return list(dependencies.keys())

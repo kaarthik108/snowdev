@@ -92,14 +92,7 @@ class SnowflakeConnection:
         return info
 
 
-
-
-
-
 import yaml
-
-
-
 
 
 class SnowpipeRunner(SnowflakeConnection):
@@ -150,7 +143,7 @@ class SnowpipeRunner(SnowflakeConnection):
                 return pipe
         raise ValueError(f"No pipe configuration found for '{self.pipe_name}'.")
 
-    def run_sql_with_yaml(self):
+    def handler_sql_with_yaml(self):
         with open(self.sql_path, "r") as sql_file:
             sql_template = sql_file.read()
 
@@ -167,5 +160,5 @@ class SnowpipeRunner(SnowflakeConnection):
 
         self.session.sql(formatted_sql).collect()
 
-    def run_pipe(self):
+    def handler_pipe(self):
         self.run_sql_with_yaml()

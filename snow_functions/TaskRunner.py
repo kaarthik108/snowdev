@@ -1,8 +1,8 @@
 from snow_functions.SnowConnect import SnowflakeConnection
 import yaml
 
-class TaskRunner(SnowflakeConnection):
 
+class TaskRunner(SnowflakeConnection):
     def __init__(self, task_name):
         super().__init__()
         self.session = self.get_session()
@@ -73,7 +73,7 @@ class TaskRunner(SnowflakeConnection):
         )
         return sql
 
-    def run_task(self):
+    def handler_task(self):
         task_sql = self.create_task_sql()
         print(f"Running task {self.task_name} with SQL: {task_sql}")
         try:

@@ -2,7 +2,6 @@ from snow_functions.SnowConnect import SnowflakeConnection
 
 
 class snowflakeregister(SnowflakeConnection):
-
     def __init__(self):
         super().__init__()
         self.session = self.get_session()
@@ -12,7 +11,7 @@ class snowflakeregister(SnowflakeConnection):
     def register_sproc(self, func, function_name, packages, stage_location, imports):
         self.session.sproc.register_from_file(
             file_path=func,
-            func_name="run",
+            func_name="handler",
             name=function_name,
             packages=packages,
             imports=imports,
@@ -28,7 +27,7 @@ class snowflakeregister(SnowflakeConnection):
 
         self.session.udf.register_from_file(
             file_path=func,
-            func_name="run",
+            func_name="handler",
             name=function_name,
             is_permanent=self.is_permanent,
             replace=self.replace,
@@ -56,5 +55,6 @@ class snowflakeregister(SnowflakeConnection):
                 packages=packages,
                 imports=imports,
             )
+
 
 # SNOW_DEPLOY = snowflakeregister()
