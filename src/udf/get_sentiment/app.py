@@ -2,10 +2,11 @@ import os
 import sys
 import cachetools
 import pandas
+# import pyjokes
 
 from snowflake.snowpark.types import PandasSeries
-
-# from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import lifetimes
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
 @cachetools.cached(cache={})

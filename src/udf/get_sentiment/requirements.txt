@@ -1,4 +1,0 @@
-snowflake-snowpark-python
-pandas
-nltk==3.7
-cachetools

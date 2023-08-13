@@ -19,11 +19,14 @@ class snowflakeregister(SnowflakeConnection):
             stage_location=f"@{stage_location}/sproc",
             replace=self.replace,
             execute_as="CALLER",
+            strict = True
         )
 
     def register_udf(self, func, function_name, packages, stage_location, imports):
 
         self.session.add_packages(*packages)
+        if imports:
+            self.session.add_import(*imports)
 
         self.session.udf.register_from_file(
             file_path=func,
@@ -34,6 +37,7 @@ class snowflakeregister(SnowflakeConnection):
             imports=imports,
             stage_location=f"@{stage_location}/udf",
             packages=packages,
+            strict = True,
         )
 
     def main(
