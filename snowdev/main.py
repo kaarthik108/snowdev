@@ -68,9 +68,13 @@ class DeploymentManager:
         dir_path, filename = os.path.split(filepath)
         FUNCTION_NAME = os.path.basename(dir_path)
 
-        STAGE_LOCATION = "snowdev_stage"
-        PACKAGES = SnowHelper.get_packages_from_requirements(dir_path)
-        IMPORTS = SnowHelper.get_imports(dir_path)
+        STAGE_LOCATION = "snowdev"
+        PACKAGES = SnowHelper.SnowHelper.get_packages_from_toml(dir_path)
+        try:
+            IMPORTS = SnowHelper.SnowHelper.get_imports(dir_path)
+        except Exception:
+            print("No imports found.")
+            IMPORTS = None
 
         print(f"packages: {PACKAGES}")
         SNOW_DEPLOY = SnowRegister.snowflakeregister()
@@ -90,22 +94,11 @@ class DeploymentManager:
     def deploy_sproc(self, filepath):
         dir_path, filename = os.path.split(filepath)
         STORED_PROC_NAME = os.path.basename(dir_path)
-        STAGE_LOCATION = "snowdev_stage"
-        PACKAGES = SnowHelper.get_packages_from_toml(dir_path)
-        upload_dir = f"src/stored_procs/{STORED_PROC_NAME}/uploads"
+        STAGE_LOCATION = "snowdev"
+        PACKAGES = SnowHelper.SnowHelper.get_packages_from_toml(dir_path)
         SNOW_DEPLOY = SnowRegister.snowflakeregister()
-
-        if os.path.isdir(upload_dir) and len(os.listdir(upload_dir)) > 0:
-            for root, dirs, files in os.walk(upload_dir):
-                for file in files:
-                    print(f"Uploading file {file} to stage {STAGE_LOCATION}")
-                    file_path = os.path.join(root, file)
-                    remote_path = f"@{STAGE_LOCATION}/{STORED_PROC_NAME}"
-                    SNOW_DEPLOY.session.file.put(
-                        file_path, remote_path, overwrite=True, auto_compress=False
-                    )
         try:
-            IMPORTS = SnowHelper.get_imports(dir_path)
+            IMPORTS = SnowHelper.SnowHelper.get_imports(dir_path)
         except Exception:
             print("No imports found.")
             IMPORTS = None
@@ -126,8 +119,6 @@ class DeploymentManager:
 
     def deploy_streamlit(self, filepath):
         dir_path, filename = os.path.split(filepath)
-        STREAMLIT_NAME = os.path.basename(dir_path)
-        STAGE_LOCATION = "STREAMLIT_APPS"
         deployer = StreamlitAppDeployer()
         session = SnowConnect.SnowflakeConnection().get_session()
         database = session.sql(
@@ -136,25 +127,13 @@ class DeploymentManager:
                  current_database()
             """
         ).collect()
-
-        upload_dir = f"src/streamlit/{STREAMLIT_NAME}/uploads"
-
         if database[0][0] == "ANALYTICS":
-            if os.path.isdir(upload_dir) and len(os.listdir(upload_dir)) > 0:
-                for root, dirs, files in os.walk(upload_dir):
-                    for file in files:
-                        print(f"Uploading file {file} to stage {STAGE_LOCATION}")
-                        file_path = os.path.join(root, file)
-                        remote_path = f"@{STAGE_LOCATION}/{STREAMLIT_NAME}"
-                        session.file.put(
-                            file_path, remote_path, overwrite=True, auto_compress=False
-                        )
             try:
                 deployer.run_streamlit(directory=filepath)
 
                 print(f"Deployed Streamlit app {filepath} successfully.")
             except Exception as e:
-                raise Exception(f"Error deploying Streamlit app: {e}")  # noqa: B904
+                raise Exception(f"Error deploying Streamlit app: {e}")
         else:
             print("You must be in the ANALYTICS database to deploy a Streamlit app.")
 
@@ -216,7 +195,7 @@ class DeploymentManager:
         static_folder = "static"  # assuming the static folder is at the root level of your project
         
         env_info = self.get_current_environment_info()
-        STAGE_LOCATION = f"{env_info['database']}.{env_info['schema']}.SNOWDEV_STAGE"
+        STAGE_LOCATION = f"{env_info['database']}.{env_info['schema']}.SNOWDEV"
         SNOW_DEPLOY = SnowRegister.snowflakeregister()
         print(f"Current stage: {STAGE_LOCATION}")
         if not self.stage_exists(STAGE_LOCATION):
@@ -228,7 +207,7 @@ class DeploymentManager:
                 for file in files:
                     print(f"Uploading file {file} to stage {STAGE_LOCATION}")
                     file_path = os.path.join(root, file)
-                    remote_path = f"@{STAGE_LOCATION}/{file}"
+                    remote_path = f"@{STAGE_LOCATION}/static/"
                     SNOW_DEPLOY.session.file.put(
                         file_path, remote_path, overwrite=True, auto_compress=False
                     )

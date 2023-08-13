@@ -17,7 +17,7 @@ class snowflakeregister(SnowflakeConnection):
             packages=packages,
             imports=imports,
             is_permanent=self.is_permanent,
-            stage_location=f"@{stage_location}",
+            stage_location=f"@{stage_location}/sproc",
             replace=self.replace,
             execute_as="CALLER",
         )
@@ -33,7 +33,7 @@ class snowflakeregister(SnowflakeConnection):
             is_permanent=self.is_permanent,
             replace=self.replace,
             imports=imports,
-            stage_location=f"@{stage_location}",
+            stage_location=f"@{stage_location}/udf",
             packages=packages,
         )
 

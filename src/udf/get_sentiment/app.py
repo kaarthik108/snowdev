@@ -4,7 +4,7 @@ import cachetools
 import pandas
 
 from snowflake.snowpark.types import PandasSeries
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
+# from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
 @cachetools.cached(cache={})
@@ -26,11 +26,11 @@ def load_model(filename):
     import_dir = sys._xoptions[IMPORT_DIRECTORY_NAME]
 
     if import_dir:
-        m = SentimentIntensityAnalyzer(lexicon_file=os.path.join(import_dir, filename))
-        return m
+        # m = SentimentIntensityAnalyzer(lexicon_file=os.path.join(import_dir, filename))
+        return None
 
 
-def run(df: PandasSeries[str]) -> PandasSeries[float]:  # noqa: F811
+def run(df: str) -> str:
     """
     This function is used to get sentiment score for a given text
 
@@ -44,9 +44,9 @@ def run(df: PandasSeries[str]) -> PandasSeries[float]:  # noqa: F811
     PandasSeries[float]
         A pandas series of sentiment score
     """
-    sia = load_model(filename="vader_lexicon.txt")
-    return df[0].apply(lambda x: sia.polarity_scores(str(x))["compound"])
+    # sia = load_model(filename="vader_lexicon.txt")
+    # return df[0].apply(lambda x: sia.polarity_scores(str(x))["compound"])
+    return df
 
-
-run._sf_vectorized_input = pandas.DataFrame
-run._sf_max_batch_size = 500
+# run._sf_vectorized_input = pandas.DataFrame
+# run._sf_max_batch_size = 500
