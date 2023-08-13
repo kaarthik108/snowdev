@@ -2,6 +2,7 @@ import argparse
 import os
 import subprocess
 from typing import Optional
+from termcolor import colored
 
 from pydantic import BaseModel
 from snow_functions import (
@@ -36,8 +37,9 @@ class DeploymentManager:
         self.current_schema = self.session.sql("SELECT current_schema()").collect()[0][0]
 
     def handle_deployment_error(self, e, deployment_type):
-        raise Exception(f"Error deploying {deployment_type}: {e}")
-    
+        error_msg = colored(f"Error deploying {deployment_type}: {e}", "red")
+        raise Exception(error_msg)
+
     def main(self):
         if self.args.test:
             self.test_locally()
@@ -87,34 +89,40 @@ class DeploymentManager:
                 imports=imports,
                 is_sproc=is_sproc,
             )
-            print(
-                f"Deployed {'stored procedure' if is_sproc else 'UDF'} {function_name} successfully."
+            success_msg = colored(
+                f"Deployed {'stored procedure' if is_sproc else 'UDF'} {function_name} successfully.",
+                "green"
             )
+            print(success_msg)
         except Exception as e:
             self.handle_deployment_error(e, 'stored procedure' if is_sproc else 'UDF')
 
 
     def deploy_streamlit(self, filepath):
         if not self.is_current_database_analytics():
-            print("You must be in the ANALYTICS database to deploy a Streamlit app.")
+            warning = colored("You must be in the ANALYTICS database to deploy a Streamlit app.", "yellow")
+            print(warning)
             return
 
         deployer = StreamlitAppDeployer()
         try:
             deployer.run_streamlit(directory=filepath)
-            print(f"Deployed Streamlit app {filepath} successfully.")
+            success_msg = colored(f"Deployed Streamlit app {filepath} successfully.", "green")
+            print(success_msg)
         except Exception as e:
             self.handle_deployment_error(e, "Streamlit app")
 
     def deploy_task(self, taskname):
         if not self.is_current_database_analytics():
-            print("You must be in the ANALYTICS database to run/schedule a task.")
+            warning = colored("You must be in the ANALYTICS database to run/schedule a task.", "yellow")
+            print(warning)
             return
 
         runner = TaskRunner(taskname)
         try:
             runner.run_task()
-            print(f"Deployed task {taskname} successfully.")
+            success_msg = colored(f"Deployed task {taskname} successfully.", "green")
+            print(success_msg)
         except Exception as e:
             self.handle_deployment_error(e, "task")
 
@@ -129,7 +137,8 @@ class DeploymentManager:
         try:
             return SnowHelper.SnowHelper.get_imports(dir_path)
         except Exception:
-            print("No imports found.")
+            warning = colored("No imports found.", "yellow")
+            print(warning)
             return None
 
     def test_locally(self):
@@ -157,22 +166,26 @@ class DeploymentManager:
         try:
             query = f"CREATE STAGE {stage_name};"
             self.session.sql(query).collect()
-            print(f"Stage {stage_name} created successfully.")
+            success_msg = colored(f"Stage {stage_name} created successfully.", "green")
+            print(success_msg)
         except Exception as e:
-            print(f"Error creating stage {stage_name}: {e}")
+            error_msg = colored(f"Error creating stage {stage_name}: {e}", "red")
+            raise Exception(error_msg)
 
     def upload_static(self):
         static_folder = "static"
         stage_location = f"{self.current_database}.{self.current_schema}.{self.stage_name}"
 
         if not self.stage_exists(stage_location):
-            print(f"Stage {stage_location} does not exist. Creating it...")
+            warning = colored(f"Stage {stage_location} does not exist. Creating it...", "yellow")
+            print(warning)
             self.create_stage(stage_location)
 
         if os.path.isdir(static_folder) and len(os.listdir(static_folder)) > 0:
             for root, dirs, files in os.walk(static_folder):
                 for file in files:
-                    print(f"Uploading file {file} to stage {stage_location}")
+                    info_msg = colored(f"Uploading file {file} to stage {stage_location}", "blue")
+                    print(info_msg)
                     file_path = os.path.join(root, file)
                     remote_path = f"@{stage_location}/static/"
                     self.session.file.put(
