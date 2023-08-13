@@ -1,1 +1,1 @@
-@snowdev/static/packages/lifetimes.zip
+@snowdev/static/packages/pyjokes.zip

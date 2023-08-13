@@ -2,7 +2,7 @@ import os
 import sys
 import cachetools
 import pandas
-# import pyjokes
+import pyjokes
 
 from snowflake.snowpark.types import PandasSeries
 import lifetimes

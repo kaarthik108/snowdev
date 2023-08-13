@@ -19,7 +19,7 @@ class snowflakeregister(SnowflakeConnection):
             stage_location=f"@{stage_location}/sproc",
             replace=self.replace,
             execute_as="CALLER",
-            strict = True
+            strict=True,
         )
 
     def register_udf(self, func, function_name, packages, stage_location, imports):
@@ -37,7 +37,7 @@ class snowflakeregister(SnowflakeConnection):
             imports=imports,
             stage_location=f"@{stage_location}/udf",
             packages=packages,
-            strict = True,
+            strict=True,
         )
 
     def main(
