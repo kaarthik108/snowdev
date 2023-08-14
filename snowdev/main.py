@@ -71,7 +71,9 @@ class DeploymentManager:
         for arg_key, path in deployment_path_map.items():
             arg_value = getattr(self.args, arg_key, None)
             if arg_value:
-                self.deploy(arg_key, f"{path}{arg_value}/app.py")
+                # Adjust the filename based on the arg_key
+                filename = "streamlit_app.py" if arg_key == "stream" else "app.py"
+                self.deploy(arg_key, f"{path}{arg_value}/{filename}")
                 break
         else:
             if self.args.task:
@@ -184,17 +186,9 @@ class DeploymentManager:
             self.handle_deployment_error(e, "stored procedure" if is_sproc else "UDF")
 
     def deploy_streamlit(self, filepath):
-        if not self.is_current_database_analytics():
-            warning = colored(
-                "You must be in the ANALYTICS database to deploy a Streamlit app.",
-                "yellow",
-            )
-            print(warning)
-            return
-
-        deployer = StreamlitAppDeployer()
+        deployer = StreamlitAppDeployer.StreamlitAppDeployer()
         try:
-            deployer.run_streamlit(directory=filepath)
+            deployer.handler_streamlit(filepath=filepath)
             success_msg = colored(
                 f"Deployed Streamlit app {filepath} successfully.", "green"
             )

@@ -13,14 +13,14 @@ def get_snowflake_connection() -> Session:
 
         snow_session = (
             get_active_session()
-        )  # Get current Snowflake session from Snowsight
+        )
     return snow_session
 
 
 session = get_snowflake_connection()
 laybuy_colour_palette = ["#751DFF", "#E1CFFF"]
 
-with open("query.yml") as fh:
+with open("external.yml") as fh:
     query = yaml.safe_load(fh)
 
 
