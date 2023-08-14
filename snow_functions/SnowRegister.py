@@ -1,4 +1,9 @@
 from snow_functions.SnowConnect import SnowflakeConnection
+import logging
+from termcolor import colored
+
+
+logger = logging.getLogger(__name__)
 
 
 class snowflakeregister(SnowflakeConnection):
@@ -6,62 +11,69 @@ class snowflakeregister(SnowflakeConnection):
         super().__init__()
         self.session = self.get_session()
 
-    def function_exists(self, function_name):
+    def _entity_exists(self, entity_name, entity_type):
         try:
-            result = self.session.sql(f"SHOW USER FUNCTIONS LIKE '{function_name}'").collect()
+            result = self.session.sql(
+                f"SHOW {entity_type} LIKE '{entity_name}'"
+            ).collect()
             return len(result) > 0
         except:
+            logger.exception(f"Failed to check if {entity_type} {entity_name} exists.")
             return False
 
-    def get_function_signature(self, function_name):
+    def _get_entity_signature(self, entity_name, entity_type):
         try:
-            result = self.session.sql(f"SHOW USER FUNCTIONS LIKE '{function_name}'").collect()
-            print(result)
+            result = self.session.sql(
+                f"SHOW {entity_type} LIKE '{entity_name}'"
+            ).collect()
             if result:
-                signature = result[0]['arguments']
-                
-                # Split on '(' and ')' and take the second element after splitting on ' '
-                arg_types = signature.split("(")[1].split(")")[0].split()[0]
-                
+                signature = result[0]["arguments"]
+                logger.info(f"Signature for {entity_type} {entity_name}: {signature}")
+
+                # Extract everything between the first set of parentheses
+                arg_string = signature.split("(")[1].split(")")[0]
+
+                # If the argument string is empty, return an empty string
+                if not arg_string.strip():
+                    return ""
+
+                # Otherwise, split by spaces and take the first part
+                arg_types = arg_string.split()[0]
                 return arg_types.strip()
+
             return ""
         except:
+            logger.exception(
+                f"Failed to get the signature for {entity_type} {entity_name}."
+            )
             return None
-        
+
+    def function_exists(self, function_name):
+        return self._entity_exists(function_name, "USER FUNCTIONS")
+
     def sproc_exists(self, sproc_name):
-        try:
-            result = self.session.sql(f"SHOW PROCEDURES LIKE '{sproc_name}'").collect()
-            return len(result) > 0
-        except:
-            return False
+        return self._entity_exists(sproc_name, "PROCEDURES")
+
+    def get_function_signature(self, function_name):
+        return self._get_entity_signature(function_name, "USER FUNCTIONS")
 
     def get_sproc_signature(self, sproc_name):
-        try:
-            result = self.session.sql(f"SHOW PROCEDURES LIKE '{sproc_name}'").collect()
-            if result:
-                signature = result[0]['arguments']
-                arg_types = signature.split("(")[1].split(")")[0].split()[0]
-                return arg_types.strip()
-            return None
-        except:
-            return None
+        return self._get_entity_signature(sproc_name, "PROCEDURES")
 
-    def rename_function(self, old_name, new_name, arg_type):
-        sql = f"ALTER FUNCTION {old_name}({arg_type}) RENAME TO {new_name}"
-        print(sql)
+    def _drop_entity(self, entity_name, arg_type, entity_type):
+        sql = f"DROP {entity_type} {entity_name}({arg_type})"
+        logger.info(sql)
         self.session.sql(sql).collect()
 
     def drop_function(self, function_name, arg_type):
-        sql = f"DROP FUNCTION {function_name}({arg_type})"
-        print(sql)
-        self.session.sql(sql).collect()
+        self._drop_entity(function_name, arg_type, "FUNCTION")
 
     def drop_sproc(self, sproc_name, arg_type):
-        sql = f"DROP PROCEDURE {sproc_name}({arg_type})"
-        print(sql)
-        self.session.sql(sql).collect()
-        
-    def register_sproc(self, func, function_name, packages, stage_location, imports, is_temp=False):
+        self._drop_entity(sproc_name, arg_type, "PROCEDURE")
+
+    def register_sproc(
+        self, func, function_name, packages, stage_location, imports, is_temp=False
+    ):
         replace = not is_temp
         is_permanent = not is_temp
 
@@ -78,7 +90,9 @@ class snowflakeregister(SnowflakeConnection):
             strict=True,
         )
 
-    def register_udf(self, func, function_name, packages, stage_location, imports, is_temp=False):
+    def register_udf(
+        self, func, function_name, packages, stage_location, imports, is_temp=False
+    ):
         replace = not is_temp
         is_permanent = not is_temp
 
@@ -98,68 +112,81 @@ class snowflakeregister(SnowflakeConnection):
             source_code_display=True,
         )
 
-    def main(self, func, function_name, stage_location, packages, is_sproc, imports=None):
-        # First, try to register the entity (either function or sproc) with a temp_ prefix without replacing
+    def _register_entity(
+        self,
+        func,
+        function_name,
+        stage_location,
+        packages,
+        imports,
+        is_sproc,
+        is_temp=False,
+    ):
+        if is_sproc:
+            self.register_sproc(
+                func, function_name, packages, stage_location, imports, is_temp
+            )
+        else:
+            self.register_udf(
+                func, function_name, packages, stage_location, imports, is_temp
+            )
+
+    def _entity_signature(self, entity_name, is_sproc):
+        if is_sproc:
+            return self.get_sproc_signature(entity_name)
+        return self.get_function_signature(entity_name)
+
+    def _drop_temp_entity(self, temp_entity_name, temp_arg_type, is_sproc):
+        if temp_arg_type is not None:
+            if is_sproc and self.sproc_exists(temp_entity_name):
+                self.drop_sproc(temp_entity_name, temp_arg_type)
+            elif not is_sproc and self.function_exists(temp_entity_name):
+                self.drop_function(temp_entity_name, temp_arg_type)
+
+    def main(
+        self, func, function_name, stage_location, packages, is_sproc, imports=None
+    ):
         temp_entity_name = "temp_" + function_name
-        temp_arg_type = None
 
         try:
-            if is_sproc:
-                self.register_sproc(
-                    func=func,
-                    function_name=temp_entity_name,
-                    packages=packages,
-                    stage_location=stage_location,
-                    imports=imports,
-                    is_temp=True
-                )
-                print(f"Sproc {temp_entity_name} passed the test. Proceeding with deployment...")
-                temp_arg_type = self.get_sproc_signature(temp_entity_name)
-            else:
-                self.register_udf(
-                    func=func,
-                    function_name=temp_entity_name,
-                    stage_location=stage_location,
-                    packages=packages,
-                    imports=imports,
-                    is_temp=True
-                )
-                print(f"Function {temp_entity_name} passed the test. Proceeding with deployment...")
-                temp_arg_type = self.get_function_signature(temp_entity_name)
+            # Register temp entity
+            self._register_entity(
+                func,
+                temp_entity_name,
+                stage_location,
+                packages,
+                imports,
+                is_sproc,
+                is_temp=True,
+            )
 
-            # Deploy the entity with the original name, replacing any existing ones
-            if is_sproc:
-                self.register_sproc(
-                    func=func,
-                    function_name=function_name,
-                    packages=packages,
-                    stage_location=stage_location,
-                    imports=imports
+            entity_type = "Sproc" if is_sproc else "Function"
+            print(
+                colored(
+                    f"{entity_type} {temp_entity_name} passed the test. Proceeding with deployment...",
+                    "green",
                 )
-            else:
-                self.register_udf(
-                    func=func,
-                    function_name=function_name,
-                    stage_location=stage_location,
-                    packages=packages,
-                    imports=imports
+            )
+
+            # Fetch signature for temp entity
+            temp_arg_type = self._entity_signature(temp_entity_name, is_sproc)
+
+            # Register main entity
+            self._register_entity(
+                func, function_name, stage_location, packages, imports, is_sproc
+            )
+
+            # Drop temp entity
+            self._drop_temp_entity(temp_entity_name, temp_arg_type, is_sproc)
+
+            print(
+                colored(
+                    f"{entity_type} {function_name} deployed successfully!", "green"
                 )
-
-            # Drop the temp_ entity
-            if is_sproc and self.sproc_exists(temp_entity_name):
-                self.drop_sproc(temp_entity_name, "")
-            elif not is_sproc and self.function_exists(temp_entity_name):
-                self.drop_function(temp_entity_name, "")
-
-            print(f"{ 'Sproc' if is_sproc else 'Function' } {function_name} deployed successfully!")
+            )
 
         except Exception as e:
-            # If there was an error, drop the temp_ entity
-            if temp_arg_type is not None:  # Ensure that temp_arg_type is not None
-                if is_sproc:
-                    if self.sproc_exists(temp_entity_name):
-                        self.drop_sproc(temp_entity_name, temp_arg_type)
-                else:
-                    if self.function_exists(temp_entity_name):
-                        self.drop_function(temp_entity_name, temp_arg_type)
+            # Drop temp entity in case of errors
+            self._drop_temp_entity(temp_entity_name, temp_arg_type, is_sproc)
+            print(colored(f"Error deploying {entity_type}: {str(e)}", "red"))
             raise e
