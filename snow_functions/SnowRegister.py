@@ -24,10 +24,27 @@ class snowflakeregister(SnowflakeConnection):
                 arg_types = signature.split("(")[1].split(")")[0].split()[0]
                 
                 return arg_types.strip()
+            return ""
+        except:
+            return None
+        
+    def sproc_exists(self, sproc_name):
+        try:
+            result = self.session.sql(f"SHOW PROCEDURES LIKE '{sproc_name}'").collect()
+            return len(result) > 0
+        except:
+            return False
+
+    def get_sproc_signature(self, sproc_name):
+        try:
+            result = self.session.sql(f"SHOW PROCEDURES LIKE '{sproc_name}'").collect()
+            if result:
+                signature = result[0]['arguments']
+                arg_types = signature.split("(")[1].split(")")[0].split()[0]
+                return arg_types.strip()
             return None
         except:
             return None
-
 
     def rename_function(self, old_name, new_name, arg_type):
         sql = f"ALTER FUNCTION {old_name}({arg_type}) RENAME TO {new_name}"
@@ -39,7 +56,11 @@ class snowflakeregister(SnowflakeConnection):
         print(sql)
         self.session.sql(sql).collect()
 
-
+    def drop_sproc(self, sproc_name, arg_type):
+        sql = f"DROP PROCEDURE {sproc_name}({arg_type})"
+        print(sql)
+        self.session.sql(sql).collect()
+        
     def register_sproc(self, func, function_name, packages, stage_location, imports, is_temp=False):
         replace = not is_temp
         is_permanent = not is_temp
@@ -78,32 +99,35 @@ class snowflakeregister(SnowflakeConnection):
         )
 
     def main(self, func, function_name, stage_location, packages, is_sproc, imports=None):
-        # First, try to register the function with a temp_ prefix without replacing
-        temp_function_name = "temp_" + function_name
+        # First, try to register the entity (either function or sproc) with a temp_ prefix without replacing
+        temp_entity_name = "temp_" + function_name
+        temp_arg_type = None
+
         try:
             if is_sproc:
                 self.register_sproc(
                     func=func,
-                    function_name=temp_function_name,
+                    function_name=temp_entity_name,
                     packages=packages,
                     stage_location=stage_location,
-                    imports=imports
+                    imports=imports,
+                    is_temp=True
                 )
+                print(f"Sproc {temp_entity_name} passed the test. Proceeding with deployment...")
+                temp_arg_type = self.get_sproc_signature(temp_entity_name)
             else:
                 self.register_udf(
                     func=func,
-                    function_name=temp_function_name,
+                    function_name=temp_entity_name,
                     stage_location=stage_location,
                     packages=packages,
-                    imports=imports
+                    imports=imports,
+                    is_temp=True
                 )
+                print(f"Function {temp_entity_name} passed the test. Proceeding with deployment...")
+                temp_arg_type = self.get_function_signature(temp_entity_name)
 
-            print(f"Function {temp_function_name} passed the test. Proceeding with deployment...")
-
-            # Fetch the argument type from the temp_ function
-            temp_arg_type = self.get_function_signature(temp_function_name)
-
-            # Deploy the function with the original name, replacing any existing ones
+            # Deploy the entity with the original name, replacing any existing ones
             if is_sproc:
                 self.register_sproc(
                     func=func,
@@ -121,15 +145,21 @@ class snowflakeregister(SnowflakeConnection):
                     imports=imports
                 )
 
-            # Drop the temp_ function
-            if self.function_exists(temp_function_name):
-                self.drop_function(temp_function_name, temp_arg_type)
+            # Drop the temp_ entity
+            if is_sproc and self.sproc_exists(temp_entity_name):
+                self.drop_sproc(temp_entity_name, "")
+            elif not is_sproc and self.function_exists(temp_entity_name):
+                self.drop_function(temp_entity_name, "")
 
-            print(f"Function {function_name} deployed successfully!")
+            print(f"{ 'Sproc' if is_sproc else 'Function' } {function_name} deployed successfully!")
 
         except Exception as e:
-            # If there was an error, drop the temp_ function
-            if self.function_exists(temp_function_name):
-                print(f"Error occurred. Dropping {temp_function_name}")
-                self.drop_function(temp_function_name, temp_arg_type)
+            # If there was an error, drop the temp_ entity
+            if temp_arg_type is not None:  # Ensure that temp_arg_type is not None
+                if is_sproc:
+                    if self.sproc_exists(temp_entity_name):
+                        self.drop_sproc(temp_entity_name, temp_arg_type)
+                else:
+                    if self.function_exists(temp_entity_name):
+                        self.drop_function(temp_entity_name, temp_arg_type)
             raise e
