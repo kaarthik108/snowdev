@@ -11,9 +11,7 @@ def get_snowflake_connection() -> Session:
     except ModuleNotFoundError:
         from snowflake.snowpark.context import get_active_session
 
-        snow_session = (
-            get_active_session()
-        )
+        snow_session = get_active_session()
     return snow_session
 
 

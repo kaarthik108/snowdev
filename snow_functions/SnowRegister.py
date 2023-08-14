@@ -1,9 +1,5 @@
 from snow_functions.SnowConnect import SnowflakeConnection
-import logging
 from termcolor import colored
-
-
-logger = logging.getLogger(__name__)
 
 
 class snowflakeregister(SnowflakeConnection):
@@ -18,7 +14,7 @@ class snowflakeregister(SnowflakeConnection):
             ).collect()
             return len(result) > 0
         except:
-            logger.exception(f"Failed to check if {entity_type} {entity_name} exists.")
+            print(f"Failed to check if {entity_type} {entity_name} exists.")
             return False
 
     def _get_entity_signature(self, entity_name, entity_type):
@@ -28,7 +24,7 @@ class snowflakeregister(SnowflakeConnection):
             ).collect()
             if result:
                 signature = result[0]["arguments"]
-                logger.info(f"Signature for {entity_type} {entity_name}: {signature}")
+                print(f"Signature for {entity_type} {entity_name}: {signature}")
 
                 # Extract everything between the first set of parentheses
                 arg_string = signature.split("(")[1].split(")")[0]
@@ -43,9 +39,7 @@ class snowflakeregister(SnowflakeConnection):
 
             return ""
         except:
-            logger.exception(
-                f"Failed to get the signature for {entity_type} {entity_name}."
-            )
+            print(f"Failed to get the signature for {entity_type} {entity_name}.")
             return None
 
     def function_exists(self, function_name):
@@ -62,7 +56,7 @@ class snowflakeregister(SnowflakeConnection):
 
     def _drop_entity(self, entity_name, arg_type, entity_type):
         sql = f"DROP {entity_type} {entity_name}({arg_type})"
-        logger.info(sql)
+        print(sql)
         self.session.sql(sql).collect()
 
     def drop_function(self, function_name, arg_type):
