@@ -137,13 +137,13 @@ class snowflakeregister(SnowflakeConnection):
             elif not is_sproc and self.function_exists(temp_entity_name):
                 self.drop_function(temp_entity_name, temp_arg_type)
 
-    def main(
-        self, func, function_name, stage_location, packages, is_sproc, imports=None
-    ):
+    def main(self, func, function_name, stage_location, packages, is_sproc, imports=None):
         temp_entity_name = "temp_" + function_name
 
         try:
-            # Register temp entity
+            print(colored("==========================================", "cyan"))
+            
+            print(colored(f"Registering Temporary {('Sproc' if is_sproc else 'Function')}:", "yellow"), colored(temp_entity_name, "magenta"))
             self._register_entity(
                 func,
                 temp_entity_name,
@@ -157,30 +157,31 @@ class snowflakeregister(SnowflakeConnection):
             entity_type = "Sproc" if is_sproc else "Function"
             print(
                 colored(
-                    f"{entity_type} {temp_entity_name} passed the test. Proceeding with deployment...",
+                    f"\n✅ {entity_type} {temp_entity_name} passed the test. Proceeding with deployment...",
                     "green",
                 )
             )
 
-            # Fetch signature for temp entity
             temp_arg_type = self._entity_signature(temp_entity_name, is_sproc)
 
             # Register main entity
+            print(colored(f"\nDeploying Main {entity_type}:", "yellow"), colored(function_name, "magenta"))
             self._register_entity(
                 func, function_name, stage_location, packages, imports, is_sproc
             )
 
-            # Drop temp entity
             self._drop_temp_entity(temp_entity_name, temp_arg_type, is_sproc)
 
             print(
                 colored(
-                    f"{entity_type} {function_name} deployed successfully!", "green"
+                    f"\n✅ {entity_type} {function_name} deployed successfully!",
+                    "green"
                 )
             )
 
         except Exception as e:
-            # Drop temp entity in case of errors
             self._drop_temp_entity(temp_entity_name, temp_arg_type, is_sproc)
-            print(colored(f"Error deploying {entity_type}: {str(e)}", "red"))
+            print(colored(f"\n❌ Error deploying {entity_type}: {str(e)}", "red"))
             raise e
+
+        print(colored("==========================================", "cyan"))

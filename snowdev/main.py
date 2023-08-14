@@ -238,12 +238,14 @@ class DeploymentManager:
 
     def run_poetry_script(self, dir_path):
         os.chdir(dir_path)
-        
+
         # Create a new poetry environment
         subprocess.call(["poetry", "env", "use", "python3"])
 
         # Activate the virtual environment
-        venv_path = subprocess.check_output(["poetry", "env", "info", "-p"]).decode().strip()
+        venv_path = (
+            subprocess.check_output(["poetry", "env", "info", "-p"]).decode().strip()
+        )
         pip_path = os.path.join(venv_path, "bin", "pip")
 
         # Install dependencies directly using pip from app.toml
@@ -256,11 +258,15 @@ class DeploymentManager:
 
         # Run app.py
         subprocess.call(["poetry", "run", "python", "app.py"])
-        
+
     def install_external_dependencies(self, dir_path):
         # Parse the pyproject.toml file for external dependencies
         toml_content = toml.load("app.toml")
-        external_deps = toml_content.get('tool', {}).get('poetry', {}).get('external_dependencies', {})
+        external_deps = (
+            toml_content.get("tool", {})
+            .get("poetry", {})
+            .get("external_dependencies", {})
+        )
 
         for package, version in external_deps.items():
             # Use poetry add to install the external dependencies
