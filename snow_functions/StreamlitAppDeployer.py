@@ -1,12 +1,11 @@
-from snow_functions.SnowConnect import SnowflakeConnection
 import os
 from termcolor import colored
 
-class StreamlitAppDeployer(SnowflakeConnection):
-    def __init__(self):
-        super().__init__()
-        self.session = self.get_session()
-        self.stage_name = "snowdev"
+
+class StreamlitAppDeployer:
+    def __init__(self, session, stage_name):
+        self.session = session
+        self.stage_name = stage_name
 
     def create_stage_if_not_exists(self, stage_name):
         # Using SQL commands in string formats can be error-prone.
@@ -17,7 +16,7 @@ class StreamlitAppDeployer(SnowflakeConnection):
 
     def upload_to_stage(self, file_path, stage_name, app_name):
         if os.path.isfile(file_path):
-            # Uploading files can fail due to permissions, or network issues. 
+            # Uploading files can fail due to permissions, or network issues.
             # Check the response for any errors.
             put_result = self.session.file.put(
                 file_path,
@@ -25,7 +24,12 @@ class StreamlitAppDeployer(SnowflakeConnection):
                 auto_compress=False,
                 overwrite=True,
             )
-            print("\t\t-", colored(file_path, 'yellow'), '...', colored(put_result[0].status.upper(), 'green'))
+            print(
+                "\t\t-",
+                colored(file_path, "yellow"),
+                "...",
+                colored(put_result[0].status.upper(), "green"),
+            )
 
     def create_streamlit_app(self, streamlit_name, stage_name, app_name):
         self.database = self.session.get_current_database().replace('"', "")
@@ -44,19 +48,19 @@ class StreamlitAppDeployer(SnowflakeConnection):
 
         # Check if the directory exists before proceeding.
         if not os.path.exists(directory):
-            print(colored(f"Error: The directory {directory} does not exist.", 'red'))
+            print(colored(f"Error: The directory {directory} does not exist.", "red"))
             return
 
-        print(colored('Deploying STREAMLIT APP:', 'cyan'))
-        print('Directory:', colored(directory, 'yellow'))
+        print(colored("Deploying STREAMLIT APP:", "cyan"))
+        print("Directory:", colored(directory, "yellow"))
 
         directory_parts = os.path.normpath(directory).split(os.sep)
         func_name = directory_parts[-1]  # Using the directory name as function name
         streamlit_name = func_name.replace("_", " ").capitalize()
 
-        print("\n\t", colored('Stage:', 'magenta'), colored(self.stage_name, 'yellow'))
-        print("\t", colored('App Name:', 'magenta'), colored(streamlit_name, 'yellow'))
-        print("\n\t", colored('Files:', 'magenta'))
+        print("\n\t", colored("Stage:", "magenta"), colored(self.stage_name, "yellow"))
+        print("\t", colored("App Name:", "magenta"), colored(streamlit_name, "yellow"))
+        print("\n\t", colored("Files:", "magenta"))
 
         # Loop through all files in the directory and upload them
         for file in os.listdir(directory):
@@ -66,6 +70,14 @@ class StreamlitAppDeployer(SnowflakeConnection):
             if os.path.isfile(file_path):
                 self.upload_to_stage(file_path, self.stage_name, func_name)
 
-        # Create a new streamlit app
-        self.create_streamlit_app(streamlit_name, self.stage_name, func_name)
-        print("\n", colored(f'Successfully Deployed Streamlit app: {os.path.join(directory, "streamlit_app.py")}', 'green'))
+        try:
+            self.create_streamlit_app(streamlit_name, self.stage_name, func_name)
+            print(
+                "\n",
+                colored(
+                    f"Successfully Deployed Streamlit app: {streamlit_name}", "green"
+                ),
+            )
+        except Exception as e:
+            print(colored(f"Error: {e}", "red"))
+            return

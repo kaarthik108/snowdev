@@ -1,20 +1,17 @@
 import argparse
 import os
 import subprocess
-import tempfile
 from typing import Optional
 from termcolor import colored
 
 from pydantic import BaseModel
-from snow_functions import (
-    SnowHelper,
-    SnowRegister,
-    StreamlitAppDeployer,
-    TaskRunner,
-)
-
+from snow_functions.SnowConnect import SnowflakeConnection
+from snow_functions.SnowRegister import snowflakeregister
+from snow_functions.SnowPackageZip import SnowPackageZip
+from snow_functions.SnowHelper import SnowHelper
+from snow_functions.StreamlitAppDeployer import StreamlitAppDeployer
+from snow_functions.TaskRunner import TaskRunner
 import toml
-import zipfile
 
 
 class DeploymentArguments(BaseModel):
@@ -36,8 +33,7 @@ class DeploymentManager:
     def __init__(self, args):
         self.args = args
         self.stage_name = "SNOWDEV"
-        self.snow_deploy = SnowRegister.snowflakeregister()
-        self.session = self.snow_deploy.session
+        self.session = SnowflakeConnection().get_session()
         self.current_database = self.session.sql("SELECT current_database()").collect()[
             0
         ][0]
@@ -59,7 +55,13 @@ class DeploymentManager:
             return
 
         if self.args.package:
-            self.deploy_package(self.args.package)
+            # self.deploy_package(self.args.package)
+            SnowPackageZip(
+                self.session,
+                self.current_database,
+                self.current_schema,
+                self.stage_name,
+            ).deploy_package(self.args.package)
             return
 
         deployment_path_map = {
@@ -88,48 +90,6 @@ class DeploymentManager:
         elif deployment_type == "stream":
             self.deploy_streamlit(filepath)
 
-    def deploy_package(self, package_name):
-        if SnowHelper.SnowHelper().is_package_available_in_snowflake_channel(
-            package_name
-        ):
-            print(
-                f"Package {package_name} is available on the Snowflake anaconda channel."
-            )
-            print(
-                "No need to create a package. Just include in your `packages` declaration."
-            )
-            return
-
-        dependencies = SnowHelper.SnowHelper().get_dependencies_of_package(package_name)
-        if dependencies:
-            available_dependencies = [
-                dep
-                for dep in dependencies
-                if SnowHelper.SnowHelper().is_package_available_in_snowflake_channel(
-                    dep
-                )
-            ]
-            if len(available_dependencies) != len(dependencies):
-                missing_dependencies = set(dependencies) - set(available_dependencies)
-                print(
-                    f"Dependencies {', '.join(missing_dependencies)} are not available in Snowflake Anaconda channel."
-                )
-                print(f"Zipping and uploading only the {package_name} package.")
-                self.zip_and_upload_package(package_name)
-            else:
-                print(
-                    f"Dependencies for {package_name} are available in Snowflake Anaconda channel."
-                )
-                print(
-                    f"Zipping and uploading the {package_name} package along with its dependencies."
-                )
-                self.zip_and_upload_package_with_dependencies(
-                    package_name, dependencies
-                )
-        else:
-            print(f"Zipping and uploading only the {package_name} package.")
-            self.zip_and_upload_package(package_name)
-
     def deploy_function(self, filepath, is_sproc):
         dir_path, filename = os.path.split(filepath)
         function_name = os.path.basename(dir_path)
@@ -147,9 +107,7 @@ class DeploymentManager:
         unavailable_packages = [
             package
             for package in packages_to_check
-            if not SnowHelper.SnowHelper().is_package_available_in_snowflake_channel(
-                package
-            )
+            if not SnowHelper.is_package_available_in_snowflake_channel(package)
         ]
 
         if unavailable_packages:
@@ -169,6 +127,7 @@ class DeploymentManager:
 
         print("packages are----", packages)
         try:
+            self.snow_deploy = snowflakeregister(session=self.session)
             self.snow_deploy.main(
                 func=filepath,
                 function_name=function_name,
@@ -186,25 +145,15 @@ class DeploymentManager:
             self.handle_deployment_error(e, "stored procedure" if is_sproc else "UDF")
 
     def deploy_streamlit(self, filepath):
-        deployer = StreamlitAppDeployer.StreamlitAppDeployer()
+        deployer = StreamlitAppDeployer(
+            session=self.session, stage_name=self.stage_name
+        )
         try:
             deployer.handler_streamlit(filepath=filepath)
-            success_msg = colored(
-                f"Deployed Streamlit app {filepath} successfully.", "green"
-            )
-            print(success_msg)
         except Exception as e:
             self.handle_deployment_error(e, "Streamlit app")
 
     def deploy_task(self, taskname):
-        if not self.is_current_database_analytics():
-            warning = colored(
-                "You must be in the ANALYTICS database to run/schedule a task.",
-                "yellow",
-            )
-            print(warning)
-            return
-
         runner = TaskRunner(taskname)
         try:
             runner.run_task()
@@ -213,16 +162,12 @@ class DeploymentManager:
         except Exception as e:
             self.handle_deployment_error(e, "task")
 
-    def is_current_database_analytics(self):
-        database = self.session.sql("SELECT current_database()").collect()
-        return database[0][0] == "ANALYTICS"
-
     def get_packages_from_toml(self, dir_path):
-        return SnowHelper.SnowHelper().get_packages_from_toml(dir_path)
+        return SnowHelper.get_packages_from_toml(dir_path)
 
     def get_imports(self, dir_path):
         try:
-            return SnowHelper.SnowHelper().get_imports(dir_path)
+            return SnowHelper.get_imports(dir_path)
         except Exception:
             warning = colored("No imports found.", "yellow")
             print(warning)
@@ -352,72 +297,6 @@ class DeploymentManager:
                 )
             )
             return None
-
-    def zip_and_upload_package(self, package_name):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            venv_path = os.path.join(temp_dir, "venv")
-            package_path = os.path.join(venv_path, "lib", "python3.9", "site-packages")
-
-            # Create a virtual environment
-            subprocess.check_call(["python3", "-m", "venv", venv_path])
-
-            # Install the package in the virtual environment
-            subprocess.check_call(
-                [os.path.join(venv_path, "bin", "pip"), "install", package_name]
-            )
-            zip_path = f"static/packages/{package_name}.zip"
-
-            # Zip the package
-            with zipfile.ZipFile(f"static/packages/{package_name}.zip", "w") as zipf:
-                for foldername, subfolders, filenames in os.walk(package_path):
-                    for filename in filenames:
-                        absolute_path = os.path.join(foldername, filename)
-                        relative_path = os.path.relpath(absolute_path, package_path)
-                        zipf.write(absolute_path, relative_path)
-
-            self.upload_to_snowflake(zip_path, package_name)
-            print(
-                f"Package {package_name} has been zipped and uploaded to Snowflake stage."
-            )
-
-    def zip_and_upload_package_with_dependencies(self, package_name, dependencies):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            venv_path = os.path.join(temp_dir, "venv")
-            package_path = os.path.join(venv_path, "lib", "python3.9", "site-packages")
-
-            # Create a virtual environment
-            subprocess.check_call(["python3", "-m", "venv", venv_path])
-
-            # Install the package and its dependencies in the virtual environment
-            subprocess.check_call(
-                [os.path.join(venv_path, "bin", "pip"), "install", package_name]
-                + dependencies
-            )
-            zip_path = f"static/packages/{package_name}_with_dependencies.zip"
-
-            # Zip the package and its dependencies
-            with zipfile.ZipFile(
-                f"static/packages/{package_name}_with_dependencies.zip", "w"
-            ) as zipf:
-                for foldername, subfolders, filenames in os.walk(package_path):
-                    for filename in filenames:
-                        absolute_path = os.path.join(foldername, filename)
-                        relative_path = os.path.relpath(absolute_path, package_path)
-                        zipf.write(absolute_path, relative_path)
-            # Upload to Snowflake
-            self.upload_to_snowflake(zip_path, package_name)
-            print(
-                f"Package {package_name} along with its dependencies has been zipped and uploaded to Snowflake stage."
-            )
-
-    def upload_to_snowflake(self, zip_path, package_name):
-        stage_location = (
-            f"{self.current_database}.{self.current_schema}.{self.stage_name}"
-        )
-        remote_path = f"@{stage_location}/static/packages"
-        self.session.file.put(
-            zip_path, remote_path, overwrite=True, auto_compress=False
-        )
 
 
 def main():

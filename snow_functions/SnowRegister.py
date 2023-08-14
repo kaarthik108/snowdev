@@ -1,11 +1,9 @@
-from snow_functions.SnowConnect import SnowflakeConnection
 from termcolor import colored
 
 
-class snowflakeregister(SnowflakeConnection):
-    def __init__(self):
-        super().__init__()
-        self.session = self.get_session()
+class snowflakeregister:
+    def __init__(self, session):
+        self.session = session
 
     def _entity_exists(self, entity_name, entity_type):
         try:
@@ -137,13 +135,21 @@ class snowflakeregister(SnowflakeConnection):
             elif not is_sproc and self.function_exists(temp_entity_name):
                 self.drop_function(temp_entity_name, temp_arg_type)
 
-    def main(self, func, function_name, stage_location, packages, is_sproc, imports=None):
+    def main(
+        self, func, function_name, stage_location, packages, is_sproc, imports=None
+    ):
         temp_entity_name = "temp_" + function_name
 
         try:
             print(colored("==========================================", "cyan"))
-            
-            print(colored(f"Registering Temporary {('Sproc' if is_sproc else 'Function')}:", "yellow"), colored(temp_entity_name, "magenta"))
+
+            print(
+                colored(
+                    f"Registering Temporary {('Sproc' if is_sproc else 'Function')}:",
+                    "yellow",
+                ),
+                colored(temp_entity_name, "magenta"),
+            )
             self._register_entity(
                 func,
                 temp_entity_name,
@@ -165,7 +171,10 @@ class snowflakeregister(SnowflakeConnection):
             temp_arg_type = self._entity_signature(temp_entity_name, is_sproc)
 
             # Register main entity
-            print(colored(f"\nDeploying Main {entity_type}:", "yellow"), colored(function_name, "magenta"))
+            print(
+                colored(f"\nDeploying Main {entity_type}:", "yellow"),
+                colored(function_name, "magenta"),
+            )
             self._register_entity(
                 func, function_name, stage_location, packages, imports, is_sproc
             )
@@ -174,8 +183,7 @@ class snowflakeregister(SnowflakeConnection):
 
             print(
                 colored(
-                    f"\n✅ {entity_type} {function_name} deployed successfully!",
-                    "green"
+                    f"\n✅ {entity_type} {function_name} deployed successfully!", "green"
                 )
             )
 
