@@ -46,7 +46,7 @@ def handler(df: str) -> str:
     PandasSeries[float]
         A pandas series of sentiment score
     """
-    sia = load_model(filename="vader_lexicon.txt")
+    # sia = load_model(filename="vader_lexicon.txt")
     # return df[0].apply(lambda x: sia.polarity_scores(str(x))["compound"])
     return df
 
