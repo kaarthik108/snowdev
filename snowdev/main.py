@@ -6,7 +6,7 @@ from termcolor import colored
 
 from pydantic import BaseModel
 from snowdev import SnowflakeConnection
-from snowdev import snowflakeregister
+from snowdev import SnowflakeRegister
 from snowdev import SnowPackageZip
 from snowdev import SnowHelper
 from snowdev import StreamlitAppDeployer
@@ -122,7 +122,7 @@ class DeploymentManager:
 
         print("packages are----", packages)
         try:
-            self.snow_deploy = snowflakeregister(session=self.session)
+            self.snow_deploy = SnowflakeRegister(session=self.session)
             self.snow_deploy.main(
                 func=filepath,
                 function_name=function_name,
@@ -169,6 +169,9 @@ class DeploymentManager:
             return None
 
     def test_locally(self):
+        if not self.args:
+            print("No arguments provided!")
+            return
         if self.args.sproc:
             dir_path = f"{self.SPROC_PATH}{self.args.sproc}/"
             self.run_poetry_script(dir_path)
@@ -295,6 +298,11 @@ def main():
         description="Deploy Snowflake UDFs and Stored Procedures."
     )
     parser.add_argument(
+        "command",
+        choices=["init", "test", "deploy"],
+        help="The main command to execute."
+    )
+    parser.add_argument(
         "--init",
         action="store_true",
         help="Initialize the snowdev project structure.",
@@ -313,11 +321,6 @@ def main():
         help="The relative path to the Streamlit python file to deploy.",
     )
     parser.add_argument("--task", type=str, help="The task name to schedule.")
-    parser.add_argument(
-        "--test",
-        action="store_true",
-        help="Test the sproc locally using poetry.",
-    )
 
     parser.add_argument(
         "--upload",
@@ -334,18 +337,16 @@ def main():
     )
 
     args = parser.parse_args()
-    if args.init:
+    if args.command == "init":
         create_directory_structure()
         return
+    elif args.command == "test":
+        deployment_manager = DeploymentManager(args)
+        deployment_manager.test_locally()
+        return
 
-    deployment_args = DeploymentArguments(
-        udf=args.udf,
-        sproc=args.sproc,
-        stream=args.stream,
-        task=args.task,
-        test=args.test,
-        upload=args.upload,
-        package=args.package,
-    )
-    deployment_manager = DeploymentManager(deployment_args)
-    deployment_manager.main()
+    elif args.command == "deploy":
+        deployment_args = DeploymentArguments(**vars(args))
+        deployment_manager = DeploymentManager(deployment_args)
+        deployment_manager.main()
+        return

@@ -56,7 +56,7 @@ def handler(df: str) -> str:
 
 # Local testing
 if __name__ == "__main__":
-    from snow_functions import SnowConnect
+    from snowdev import SnowflakeConnection
 
-    session = SnowConnect.SnowflakeConnection().get_session()
+    session = SnowflakeConnection().get_session()
     print(handler("test"))

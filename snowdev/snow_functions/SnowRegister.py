@@ -1,7 +1,7 @@
 from termcolor import colored
 
 
-class snowflakeregister:
+class SnowflakeRegister:
     def __init__(self, session):
         self.session = session
 

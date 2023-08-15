@@ -5,9 +5,9 @@ import yaml
 
 def get_snowflake_connection() -> Session:
     try:
-        from snow_functions import SnowConnect
+        from snowdev import SnowflakeConnection
 
-        snow_session = SnowConnect.SnowflakeConnection()
+        snow_session = SnowflakeConnection().get_session()
     except ModuleNotFoundError:
         from snowflake.snowpark.context import get_active_session
 
