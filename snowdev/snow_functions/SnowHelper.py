@@ -165,13 +165,13 @@ class SnowHelper:
                     with open(os.path.join(new_item_path, filename), "w") as f:
                         f.write(content)
                 else:
+                    filename = "app.py" if ext == "py" else "app.toml"
                     print(
                         colored(
                             f"No template found for {item_type} with extension {ext}. Creating an empty {filename}...",
                             "yellow",
                         )
                     )
-                    filename = "app.py" if ext == "py" else "app.toml"
                     with open(os.path.join(new_item_path, filename), "w") as f:
                         pass
 
