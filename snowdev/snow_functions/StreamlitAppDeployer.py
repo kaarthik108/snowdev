@@ -6,6 +6,7 @@ class StreamlitAppDeployer:
     def __init__(self, session, stage_name):
         self.session = session
         self.stage_name = stage_name
+        self.warehouse = self.session.get_current_warehouse().replace('"', "")
 
     def create_stage_if_not_exists(self, stage_name):
         # Using SQL commands in string formats can be error-prone.
@@ -39,7 +40,7 @@ class StreamlitAppDeployer:
             CREATE OR REPLACE STREAMLIT "{streamlit_name}" 
             ROOT_LOCATION = '@{stage_name}/streamlit/'
             MAIN_FILE = 'streamlit_app.py'
-            QUERY_WAREHOUSE = 'COMPUTE_WH'
+            QUERY_WAREHOUSE = '{self.warehouse}'
         """
         ).collect()
 

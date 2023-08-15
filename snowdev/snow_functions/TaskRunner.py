@@ -1,4 +1,4 @@
-from snow_functions.SnowConnect import SnowflakeConnection
+from . import SnowflakeConnection
 import yaml
 
 

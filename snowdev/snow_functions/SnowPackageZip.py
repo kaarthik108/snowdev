@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 import zipfile
 
-from snow_functions import SnowHelper
+from . import SnowHelper
 
 
 class SnowPackageZip:

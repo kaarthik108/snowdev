@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snowdev"
-version = "0.1"
+version = "0.1.2"
 description = "snowdev is a Python package that allows you to deploy Snowflake UDFs, stored procedures, tasks, streamlit from your local environment."
 authors = ["kaarthik"]
 readme = "README.md"
@@ -18,10 +18,7 @@ termcolor = "2.3.0"
 black = "22.10.0"
 snowflake-connector-python = "3.0.4"
 "snowflake-snowpark-python" = { version = "1.5.0", extras = ["pandas"] }
-joblib = "1.2.0"
-pyyaml = "6.0"
-streamlit = "1.25.0"
-plotly = "5.9.0"
+bs4 = "^0.0.1"
 
 [tool.poetry.scripts]
 snowdev = "snowdev.main:main"

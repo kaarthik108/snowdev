@@ -5,12 +5,12 @@ from typing import Optional
 from termcolor import colored
 
 from pydantic import BaseModel
-from snow_functions.SnowConnect import SnowflakeConnection
-from snow_functions.SnowRegister import snowflakeregister
-from snow_functions.SnowPackageZip import SnowPackageZip
-from snow_functions.SnowHelper import SnowHelper
-from snow_functions.StreamlitAppDeployer import StreamlitAppDeployer
-from snow_functions.TaskRunner import TaskRunner
+from snowdev import SnowflakeConnection
+from snowdev import snowflakeregister
+from snowdev import SnowPackageZip
+from snowdev import SnowHelper
+from snowdev import StreamlitAppDeployer
+from snowdev import TaskRunner
 import toml
 
 
@@ -19,7 +19,6 @@ class DeploymentArguments(BaseModel):
     sproc: Optional[str]
     stream: Optional[str]
     task: Optional[str]
-    pipe: Optional[str]
     test: bool = False
     upload: Optional[str]
     package: Optional[str]
@@ -34,12 +33,8 @@ class DeploymentManager:
         self.args = args
         self.stage_name = "SNOWDEV"
         self.session = SnowflakeConnection().get_session()
-        self.current_database = self.session.sql("SELECT current_database()").collect()[
-            0
-        ][0]
-        self.current_schema = self.session.sql("SELECT current_schema()").collect()[0][
-            0
-        ]
+        self.current_database = self.session.get_current_database().replace('"', "")
+        self.current_schema = self.session.get_current_schema().replace('"', "")
 
     def handle_deployment_error(self, e, deployment_type):
         error_msg = colored(f"Error deploying {deployment_type}: {e}", "red")
@@ -264,44 +259,45 @@ class DeploymentManager:
     def deploy_pipe(self, pipe_name):
         pass
 
-    def get_packages(self, dir_path):
-        package_file = os.path.join(dir_path, "app.toml")
 
-        # Assuming app.toml has a structure like: [dependencies] \n package_name = "version"
-        toml_data = toml.load(package_file)
-        dependencies = toml_data.get("dependencies", {})
-        print("zipping")
-        # List of packages that need to be zipped and uploaded
-        packages_to_upload = []
+def create_directory_structure():
+    # Directories
+    dirs_to_create = {
+        "_src": ["stored_procs", "streamlit", "udf"],
+        "_static": ["packages"],
+    }
 
-        for package in dependencies:
-            if not SnowHelper.SnowHelper.is_package_available_in_snowflake_channel(
-                package
-            ):
-                self.zip_and_upload_package(package, dir_path)
-                packages_to_upload.append(package)
+    for root_dir, sub_dirs in dirs_to_create.items():
+        if not os.path.exists(root_dir):
+            os.mkdir(root_dir)
+            for sub_dir in sub_dirs:
+                os.mkdir(os.path.join(root_dir, sub_dir))
 
-        return packages_to_upload
+    files_to_create = [".env", ".gitignore", "pyproject.toml"]
 
-    def get_poetry_venv_path(self):
-        try:
-            # Use Poetry to get the path to the virtual environment
-            venv_path = subprocess.check_output(
-                ["poetry", "env", "info", "--path"], text=True
-            ).strip()
-            return venv_path
-        except subprocess.CalledProcessError:
-            print(
-                colored(
-                    "Error: Couldn't determine Poetry virtual environment path.", "red"
-                )
-            )
-            return None
+    if not os.path.exists(".env"):
+        with open(".env", "w") as f:
+            f.write("")
+
+    if not os.path.exists(".gitignore"):
+        with open(".gitignore", "w") as f:
+            f.write("*.pyc\n__pycache__/\n.env")
+
+    if not os.path.exists("pyproject.toml"):
+        with open("pyproject.toml", "w") as f:
+            f.write("")
+
+    print("Project structure initialized!")
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="Deploy Snowflake UDFs and Stored Procedures."
+    )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="Initialize the snowdev project structure.",
     )
     parser.add_argument(
         "--udf", type=str, help="The relative path to the UDF python file to deploy."
@@ -317,7 +313,6 @@ def main():
         help="The relative path to the Streamlit python file to deploy.",
     )
     parser.add_argument("--task", type=str, help="The task name to schedule.")
-    parser.add_argument("--pipe", type=str, help="The pipe name to deploy.")
     parser.add_argument(
         "--test",
         action="store_true",
@@ -339,12 +334,15 @@ def main():
     )
 
     args = parser.parse_args()
+    if args.init:
+        create_directory_structure()
+        return
+
     deployment_args = DeploymentArguments(
         udf=args.udf,
         sproc=args.sproc,
         stream=args.stream,
         task=args.task,
-        pipe=args.pipe,
         test=args.test,
         upload=args.upload,
         package=args.package,
