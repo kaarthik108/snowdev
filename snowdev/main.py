@@ -7,8 +7,14 @@ import toml
 from pydantic import BaseModel
 from termcolor import colored
 
-from snowdev import (SnowflakeConnection, SnowflakeRegister, SnowHelper,
-                     SnowPackageZip, StreamlitAppDeployer, TaskRunner)
+from snowdev import (
+    SnowflakeConnection,
+    SnowflakeRegister,
+    SnowHelper,
+    SnowPackageZip,
+    StreamlitAppDeployer,
+    TaskRunner,
+)
 
 
 class DeploymentArguments(BaseModel):

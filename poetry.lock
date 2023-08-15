@@ -38,7 +38,6 @@ mypy-extensions = ">=0.4.3"
 pathspec = ">=0.9.0"
 platformdirs = ">=2"
 tomli = {version = ">=1.1.0", markers = "python_full_version < \"3.11.0a7\""}
-typing-extensions = {version = ">=3.10.0.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
 colorama = ["colorama (>=0.4.3)"]
@@ -429,7 +428,7 @@ files = [
 ]
 
 [package.dependencies]
-numpy = {version = ">=1.20.3", markers = "python_version < \"3.10\""}
+numpy = {version = ">=1.21.0", markers = "python_version >= \"3.10\""}
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
 tzdata = ">=2022.1"
@@ -841,13 +840,13 @@ secure-local-storage = ["keyring (!=16.1.0,<25.0.0)"]
 
 [[package]]
 name = "snowflake-snowpark-python"
-version = "1.5.0"
+version = "1.5.1"
 description = "Snowflake Snowpark for Python"
 optional = false
-python-versions = ">=3.8, <3.10"
+python-versions = ">=3.8, <3.11"
 files = [
-    {file = "snowflake-snowpark-python-1.5.0.tar.gz", hash = "sha256:ab04ea3c738143efc3f5f26249a53027c4377058b0019ceb10291439321b16ce"},
-    {file = "snowflake_snowpark_python-1.5.0-py3-none-any.whl", hash = "sha256:c4b20366c001b70704f4168677e43dfef13588da667e1a1121c7f46fdb18c9a6"},
+    {file = "snowflake-snowpark-python-1.5.1.tar.gz", hash = "sha256:31439ed61e4180100e2ae97786f2e98029dbf31a89ad1af09bcfd3386f642faa"},
+    {file = "snowflake_snowpark_python-1.5.1-py3-none-any.whl", hash = "sha256:971dd0c52ff09f80d63132808746e70beac6f86bb9eb0604fe4da60c50c23421"},
 ]
 
 [package.dependencies]
@@ -977,5 +976,5 @@ test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = "3.9.17"
-content-hash = "953d783ecfd7381ebf04dfe838c8f5d776073e4c057de80b39a2af893d7f0178"
+python-versions = ">=3.10.0,<3.11.0"
+content-hash = "fce4d429be7d4cdf0ba46f5ae60600a4d10e9a2fea3fbd8f9230b94a80f5c7b7"

@@ -57,9 +57,7 @@ class SnowPackageZip:
                         f"\nPackage {package_name} has been zipped and uploaded to Snowflake stage."
                     )
                 else:
-                    self._print_success(
-                        f"\nPackage {package_name} has been zipped."
-                    )
+                    self._print_success(f"\nPackage {package_name} has been zipped.")
 
         except Exception as e:
             self._print_error(f"Error encountered: {e}")
@@ -109,15 +107,23 @@ class SnowPackageZip:
 
     def deploy_package(self, package_name, upload):
         try:
-            available_versions = SnowHelper.get_available_versions_from_snowflake_channel(package_name)
-            
+            available_versions = (
+                SnowHelper.get_available_versions_from_snowflake_channel(package_name)
+            )
+
             if available_versions:
-                print(colored(
-                    f"\nPackage {package_name} is available on the Snowflake anaconda channel. Latest version: {available_versions[0]}\n", "green"
-                ))
-                print(colored(
-                    "No need to create a package. Just include in your `app.toml` declaration.", "green"
-                ))
+                print(
+                    colored(
+                        f"\nPackage {package_name} is available on the Snowflake anaconda channel. Latest version: {available_versions[0]}\n",
+                        "green",
+                    )
+                )
+                print(
+                    colored(
+                        "No need to create a package. Just include in your `app.toml` declaration.",
+                        "green",
+                    )
+                )
                 return
 
             dependencies = SnowHelper.get_dependencies_of_package(package_name)

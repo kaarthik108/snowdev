@@ -22,8 +22,14 @@ class SnowHelper:
     }
     TEMPLATES = {
         "udf": {"py": "fillers/udf/fill.py", "toml": "fillers/udf/fill.toml"},
-        "sproc": {"py": "fillers/stored_procs/fill.py", "toml": "fillers/stored_procs/fill.toml"},
-        "stream": {"py": "fillers/streamlit/fill.py", "yml": "fillers/streamlit/fill.yml"},
+        "sproc": {
+            "py": "fillers/stored_procs/fill.py",
+            "toml": "fillers/stored_procs/fill.toml",
+        },
+        "stream": {
+            "py": "fillers/streamlit/fill.py",
+            "yml": "fillers/streamlit/fill.yml",
+        },
     }
 
     @classmethod
@@ -135,7 +141,10 @@ class SnowHelper:
 
         # Handling the streamlit templates specifically
         if item_type == "stream":
-            for template_ext, output_name in [("py", "streamlit_app.py"), ("yml", "environment.yml")]:
+            for template_ext, output_name in [
+                ("py", "streamlit_app.py"),
+                ("yml", "environment.yml"),
+            ]:
                 template_name = "fillers/streamlit/fill." + template_ext
                 template_path = os.path.join("snowdev", template_name)
 
