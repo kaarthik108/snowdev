@@ -1,5 +1,6 @@
-from . import SnowflakeConnection
 import yaml
+
+from . import SnowflakeConnection
 
 
 class TaskRunner(SnowflakeConnection):

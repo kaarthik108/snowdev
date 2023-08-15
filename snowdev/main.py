@@ -2,16 +2,13 @@ import argparse
 import os
 import subprocess
 from typing import Optional
+
+import toml
+from pydantic import BaseModel
 from termcolor import colored
 
-from pydantic import BaseModel
-from snowdev import SnowflakeConnection
-from snowdev import SnowflakeRegister
-from snowdev import SnowPackageZip
-from snowdev import SnowHelper
-from snowdev import StreamlitAppDeployer
-from snowdev import TaskRunner
-import toml
+from snowdev import (SnowflakeConnection, SnowflakeRegister, SnowHelper,
+                     SnowPackageZip, StreamlitAppDeployer, TaskRunner)
 
 
 class DeploymentArguments(BaseModel):
@@ -157,10 +154,11 @@ class DeploymentManager:
                 self.session,
                 self.stage_name,
             ).deploy_package(package_name, upload)
-            success_msg = colored(
-                f"\n{'Uploaded' if upload else 'Zipped'} {package_name} successfully.", "green"
-            )
-            print(success_msg)
+            # success_msg = colored(
+            #     f"\n{'Uploaded' if upload else 'Zipped'} {package_name} successfully.",
+            #     "green",
+            # )
+            # print(success_msg)
         except Exception as e:
             self.handle_deployment_error(e, "package")
 
@@ -306,7 +304,7 @@ def main():
     )
     parser.add_argument(
         "command",
-        choices=["init", "test", "deploy", "upload", "add"],
+        choices=["init", "test", "deploy", "upload", "add", "new"],
         help="The main command to execute.",
     )
     parser.add_argument(
@@ -357,11 +355,16 @@ def main():
         return
     elif args.command == "add":
         deployment_manager = DeploymentManager(args)
-        user_response = input(colored("🤔 Do you want to upload the zip to stage? (yes/no): ", "cyan"))
+        user_response = input(
+            colored("🤔 Do you want to upload the zip to stage? (yes/no): ", "cyan")
+        )
         if user_response.lower() in ["yes", "y"]:
             deployment_manager.deploy_package(args.package, upload=True)
             return
         deployment_manager.deploy_package(args.package, upload=False)
+        return
+    elif args.command == "new":
+        SnowHelper.create_new_component(vars(args))
         return
 
     elif args.command == "deploy":

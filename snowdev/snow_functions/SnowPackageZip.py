@@ -28,7 +28,9 @@ class SnowPackageZip:
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 venv_path = os.path.join(temp_dir, "venv")
-                package_path = os.path.join(venv_path, "lib", "python3.9", "site-packages")
+                package_path = os.path.join(
+                    venv_path, "lib", "python3.9", "site-packages"
+                )
 
                 # Create a virtual environment
                 subprocess.check_call(["python3", "-m", "venv", venv_path])
@@ -40,7 +42,9 @@ class SnowPackageZip:
                 zip_path = f"static/packages/{package_name}.zip"
 
                 # Zip the package
-                with zipfile.ZipFile(f"static/packages/{package_name}.zip", "w") as zipf:
+                with zipfile.ZipFile(
+                    f"static/packages/{package_name}.zip", "w"
+                ) as zipf:
                     for foldername, subfolders, filenames in os.walk(package_path):
                         for filename in filenames:
                             absolute_path = os.path.join(foldername, filename)
@@ -52,15 +56,23 @@ class SnowPackageZip:
                     self._print_success(
                         f"\nPackage {package_name} has been zipped and uploaded to Snowflake stage."
                     )
+                else:
+                    self._print_success(
+                        f"\nPackage {package_name} has been zipped."
+                    )
 
         except Exception as e:
             self._print_error(f"Error encountered: {e}")
 
-    def zip_and_upload_package_with_dependencies(self, package_name, dependencies, upload):
+    def zip_and_upload_package_with_dependencies(
+        self, package_name, dependencies, upload
+    ):
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 venv_path = os.path.join(temp_dir, "venv")
-                package_path = os.path.join(venv_path, "lib", "python3.9", "site-packages")
+                package_path = os.path.join(
+                    venv_path, "lib", "python3.9", "site-packages"
+                )
 
                 # Create a virtual environment
                 subprocess.check_call(["python3", "-m", "venv", venv_path])
@@ -87,21 +99,25 @@ class SnowPackageZip:
                     self._print_success(
                         f"\nPackage {package_name} along with its dependencies has been zipped and uploaded to Snowflake stage."
                     )
+                else:
+                    self._print_success(
+                        f"\nPackage {package_name} along with its dependencies has been zipped."
+                    )
 
         except Exception as e:
             self._print_error(f"Error encountered: {e}")
-        
+
     def deploy_package(self, package_name, upload):
         try:
-            if SnowHelper.is_package_available_in_snowflake_channel(
-                package_name
-            ):
-                print(
-                    f"Package {package_name} is available on the Snowflake anaconda channel."
-                )
-                print(
-                    "No need to create a package. Just include in your `packages` declaration."
-                )
+            available_versions = SnowHelper.get_available_versions_from_snowflake_channel(package_name)
+            
+            if available_versions:
+                print(colored(
+                    f"\nPackage {package_name} is available on the Snowflake anaconda channel. Latest version: {available_versions[0]}\n", "green"
+                ))
+                print(colored(
+                    "No need to create a package. Just include in your `app.toml` declaration.", "green"
+                ))
                 return
 
             dependencies = SnowHelper.get_dependencies_of_package(package_name)
@@ -109,12 +125,12 @@ class SnowPackageZip:
                 available_dependencies = [
                     dep
                     for dep in dependencies
-                    if SnowHelper.is_package_available_in_snowflake_channel(
-                        dep
-                    )
+                    if SnowHelper.is_package_available_in_snowflake_channel(dep)
                 ]
                 if len(available_dependencies) != len(dependencies):
-                    missing_dependencies = set(dependencies) - set(available_dependencies)
+                    missing_dependencies = set(dependencies) - set(
+                        available_dependencies
+                    )
                     print(
                         f"Dependencies {', '.join(missing_dependencies)} are not available in Snowflake Anaconda channel."
                     )
