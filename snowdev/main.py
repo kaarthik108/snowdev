@@ -50,13 +50,7 @@ class DeploymentManager:
             return
 
         if self.args.package:
-            # self.deploy_package(self.args.package)
-            SnowPackageZip(
-                self.session,
-                self.current_database,
-                self.current_schema,
-                self.stage_name,
-            ).deploy_package(self.args.package)
+            self.deploy_package()
             return
 
         deployment_path_map = {
@@ -156,6 +150,19 @@ class DeploymentManager:
             print(success_msg)
         except Exception as e:
             self.handle_deployment_error(e, "task")
+
+    def deploy_package(self, package_name, upload):
+        try:
+            SnowPackageZip(
+                self.session,
+                self.stage_name,
+            ).deploy_package(package_name, upload)
+            success_msg = colored(
+                f"\n{'Uploaded' if upload else 'Zipped'} {package_name} successfully.", "green"
+            )
+            print(success_msg)
+        except Exception as e:
+            self.handle_deployment_error(e, "package")
 
     def get_packages_from_toml(self, dir_path):
         return SnowHelper.get_packages_from_toml(dir_path)
@@ -299,8 +306,8 @@ def main():
     )
     parser.add_argument(
         "command",
-        choices=["init", "test", "deploy"],
-        help="The main command to execute."
+        choices=["init", "test", "deploy", "upload", "add"],
+        help="The main command to execute.",
     )
     parser.add_argument(
         "--init",
@@ -343,6 +350,18 @@ def main():
     elif args.command == "test":
         deployment_manager = DeploymentManager(args)
         deployment_manager.test_locally()
+        return
+    elif args.command == "upload":
+        deployment_manager = DeploymentManager(args)
+        deployment_manager.upload_static()
+        return
+    elif args.command == "add":
+        deployment_manager = DeploymentManager(args)
+        user_response = input(colored("🤔 Do you want to upload the zip to stage? (yes/no): ", "cyan"))
+        if user_response.lower() in ["yes", "y"]:
+            deployment_manager.deploy_package(args.package, upload=True)
+            return
+        deployment_manager.deploy_package(args.package, upload=False)
         return
 
     elif args.command == "deploy":
