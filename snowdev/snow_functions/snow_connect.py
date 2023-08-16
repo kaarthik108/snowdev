@@ -49,16 +49,19 @@ class SnowflakeConnection:
             session: Snowflake connection session.
         """
         if self.session is None:
-            print(colored(
-                """
+            print(
+                colored(
+                    """
                                        _            
             ___ _ __   _____      ____| | _____   __
             / __| '_ \ / _ \ \ /\ / / _` |/ _ \ \ / /
             \__ \ | | | (_) \ V  V / (_| |  __/\ V / 
             |___/_| |_|\___/ \_/\_/ \__,_|\___| \_/  
                                                     
-            """
-            , "cyan"))
+            """,
+                    "cyan",
+                )
+            )
             self.session = Session.builder.configs(self.connection_parameters).create()
             self.session.sql_simplifier_enabled = True
         return self.session

@@ -1,3 +1,6 @@
+import os
+
+import toml
 from termcolor import colored
 
 
@@ -51,6 +54,15 @@ class SnowflakeRegister:
 
     def get_sproc_signature(self, sproc_name):
         return self._get_entity_signature(sproc_name, "PROCEDURES")
+
+    def get_connection_details_from_toml(self, dir_path):
+        # Load the app.toml from the specified directory
+        toml_path = os.path.join(dir_path, "app.toml")
+        try:
+            data = toml.load(toml_path)
+            return data.get("tool", {}).get("connection", {})
+        except (FileNotFoundError, Exception):
+            return {}
 
     def _drop_entity(self, entity_name, arg_type, entity_type):
         sql = f"DROP {entity_type} {entity_name}({arg_type})"
@@ -139,17 +151,40 @@ class SnowflakeRegister:
         self, func, function_name, stage_location, packages, is_sproc, imports=None
     ):
         temp_entity_name = "temp_" + function_name
+        temp_arg_type = None
+        # Get the directory path for the function
+        dir_path = os.path.dirname(func)
+        connection_details = self.get_connection_details_from_toml(dir_path)
+
+        detail_mapping = {
+            "database": {
+                "method": self.session.use_database,
+                "message": "Using database",
+            },
+            "schema": {"method": self.session.use_schema, "message": "Using schema"},
+            "role": {"method": self.session.use_role, "message": "Using role"},
+        }
+
+        for detail, info in detail_mapping.items():
+            value = connection_details.get(detail)
+            if value:
+                print(colored(f"{info['message']}: {value}", "green"))
+                info["method"](value)
+            else:
+                print(colored(f"Using default {detail}", "yellow"))
 
         try:
             print(colored("==========================================", "cyan"))
+            entity_type = "Sproc" if is_sproc else "Function"
 
             print(
                 colored(
-                    f"Registering Temporary {('Sproc' if is_sproc else 'Function')}:",
+                    f"Registering Temporary {entity_type}:",
                     "yellow",
                 ),
                 colored(temp_entity_name, "magenta"),
             )
+
             self._register_entity(
                 func,
                 temp_entity_name,
@@ -160,10 +195,9 @@ class SnowflakeRegister:
                 is_temp=True,
             )
 
-            entity_type = "Sproc" if is_sproc else "Function"
             print(
                 colored(
-                    f"\n✅ {entity_type} {temp_entity_name} passed the test. Proceeding with deployment...",
+                    f"\n✅ Temporary {entity_type} {temp_entity_name} passed the test. Proceeding with deployment...",
                     "green",
                 )
             )
@@ -189,7 +223,12 @@ class SnowflakeRegister:
 
         except Exception as e:
             self._drop_temp_entity(temp_entity_name, temp_arg_type, is_sproc)
-            print(colored(f"\n❌ Error deploying {entity_type}: {str(e)}", "red"))
+            print(
+                colored(
+                    f"\n❌ Error deploying {entity_type if 'entity_type' in locals() else 'Entity'}: {str(e)}",
+                    "red",
+                )
+            )
             raise e
 
         print(colored("==========================================", "cyan"))

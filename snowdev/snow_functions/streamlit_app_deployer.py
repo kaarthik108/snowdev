@@ -1,6 +1,7 @@
 import os
 
 from termcolor import colored
+import yaml
 
 
 class StreamlitAppDeployer:
@@ -15,6 +16,45 @@ class StreamlitAppDeployer:
         self.session.sql(
             f"CREATE STAGE IF NOT EXISTS {stage_name} DIRECTORY = (ENABLE = TRUE)"
         ).collect()
+
+    def get_connection_details_from_yml(self, directory):
+        """
+        Parse the environment.yml file and extract the connection details.
+        """
+        yml_path = os.path.join(directory, "environment.yml")
+
+        if not os.path.exists(yml_path):
+            return {}
+
+        with open(yml_path, "r") as file:
+            content = yaml.safe_load(file)
+
+        return content
+
+    def _apply_connection_detail(self, directory, key, action, default_msg):
+        """Apply a specific connection detail based on its key and the associated action."""
+        connection_details = self.get_connection_details_from_yml(directory)
+        detail = connection_details.get(key)
+        if detail:
+            try:
+                action(detail)
+                print(colored(f"Using {key}: {detail}", "green"))
+            except Exception as e:
+                print(colored(f"Error setting {key}: {e}", "red"))
+        else:
+            print(colored(default_msg, "yellow"))
+
+    def apply_connection_details(self, directory):
+        """Apply all the connection details."""
+        self._apply_connection_detail(
+            directory, "database", self.session.use_database, "Using default database"
+        )
+        self._apply_connection_detail(
+            directory, "schema", self.session.use_schema, "Using default schema"
+        )
+        self._apply_connection_detail(
+            directory, "role", self.session.use_role, "Using default role"
+        )
 
     def upload_to_stage(self, file_path, stage_name, app_name):
         if os.path.isfile(file_path):
@@ -48,10 +88,13 @@ class StreamlitAppDeployer:
     def handler_streamlit(self, filepath):
         directory = os.path.dirname(filepath)
 
-        # Check if the directory exists before proceeding.
         if not os.path.exists(directory):
             print(colored(f"Error: The directory {directory} does not exist.", "red"))
             return
+
+        self.connection_details = self.get_connection_details_from_yml(directory)
+
+        self.apply_connection_details(directory)
 
         print(colored("Deploying STREAMLIT APP:", "cyan"))
         print("Directory:", colored(directory, "yellow"))

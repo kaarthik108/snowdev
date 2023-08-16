@@ -37,9 +37,7 @@ class DocumentProcessor:
 
 
 def run():
-    secrets = Secrets(
-        OPENAI_API_KEY=os.environ["OPENAI_API_KEY"]
-    )
+    secrets = Secrets(OPENAI_API_KEY=os.environ["OPENAI_API_KEY"])
     config = Config()
     doc_processor = DocumentProcessor(secrets, config)
     result = doc_processor.process()
@@ -48,5 +46,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-
-

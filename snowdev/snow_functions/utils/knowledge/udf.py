@@ -50,6 +50,7 @@ def handler(df: str) -> str:
     return df[0].apply(lambda x: sia.polarity_scores(str(x))["compound"])
     return df
 
+
 # for vectorized input
 handler._sf_vectorized_input = pandas.DataFrame
 handler._sf_max_batch_size = 500

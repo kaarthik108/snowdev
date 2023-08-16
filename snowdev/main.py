@@ -370,26 +370,43 @@ def main():
             return
         deployment_manager.deploy_package(args.package, upload=False)
         return
-    
+
     elif args.command == "ai":
         # Get the component type and value dynamically.
-        component_details = {k: v for k, v in vars(args).items() if k in ["udf", "sproc", "stream"] and v}
-        
+        component_details = {
+            k: v for k, v in vars(args).items() if k in ["udf", "sproc", "stream"] and v
+        }
+
         if not component_details:
-            print(colored("⚠️ Please specify a type (--udf, --sproc, or --stream) along with the ai command.", "yellow"))
+            print(
+                colored(
+                    "⚠️ Please specify a type (--udf, --sproc, or --stream) along with the ai command.",
+                    "yellow",
+                )
+            )
             return
 
         component_type, prompt = list(component_details.items())[0]
 
-        component_name = input(colored(f"🤔 Enter the {component_type.upper()} name: ", "cyan"))
-        
-        if SnowBot.udf_exists(component_name):  # This method name may need to change based on what exactly it checks
-            print(colored(f"⚠️ Component named {component_name} already exists! Choose another name or check your directories.", "yellow"))
+        component_name = input(
+            colored(f"🤔 Enter the {component_type.upper()} name: ", "cyan")
+        )
+
+        if SnowBot.udf_exists(
+            component_name
+        ):  # This method name may need to change based on what exactly it checks
+            print(
+                colored(
+                    f"⚠️ Component named {component_name} already exists! Choose another name or check your directories.",
+                    "yellow",
+                )
+            )
             return
 
-        SnowBot.create_new_ai_component(component_name, prompt, template_type=component_type)
+        SnowBot.create_new_ai_component(
+            component_name, prompt, template_type=component_type
+        )
         return
-
 
     elif args.command == "new":
         SnowHelper.create_new_component(vars(args))
