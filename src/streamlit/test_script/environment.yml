@@ -1,6 +1,0 @@
-name: snowflake-test
-channels:
-  - snowflake
-dependencies:
-  - pyyaml
-  - plotly

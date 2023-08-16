@@ -1,1 +1,0 @@
-@snowdev/static/packages/pyjokes.zip

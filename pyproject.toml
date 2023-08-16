@@ -19,6 +19,8 @@ termcolor = "2.3.0"
 "snowflake-snowpark-python" = { version = "1.5.1", extras = ["pandas"] }
 pyyaml = "^6.0.1"
 toml = "^0.10.2"
+openai = "^0.27.8"
+langchain = "^0.0.265"
 
 [tool.poetry.dev-dependencies]
 black = "^22.10.0"
