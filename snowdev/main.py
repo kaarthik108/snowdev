@@ -161,11 +161,6 @@ class DeploymentManager:
                 self.session,
                 self.stage_name,
             ).deploy_package(package_name, upload)
-            # success_msg = colored(
-            #     f"\n{'Uploaded' if upload else 'Zipped'} {package_name} successfully.",
-            #     "green",
-            # )
-            # print(success_msg)
         except Exception as e:
             self.handle_deployment_error(e, "package")
 
@@ -194,16 +189,13 @@ class DeploymentManager:
     def run_poetry_script(self, dir_path):
         os.chdir(dir_path)
 
-        # Create a new poetry environment
         subprocess.call(["poetry", "env", "use", "python3"])
 
-        # Activate the virtual environment
         venv_path = (
             subprocess.check_output(["poetry", "env", "info", "-p"]).decode().strip()
         )
         pip_path = os.path.join(venv_path, "bin", "pip")
 
-        # Install dependencies directly using pip from app.toml
         with open("app.toml", "r") as file:
             data = file.readlines()
             for line in data:
@@ -211,11 +203,9 @@ class DeploymentManager:
                     package = line.split("=")[0].strip()
                     subprocess.call([pip_path, "install", package])
 
-        # Run app.py
         subprocess.call(["poetry", "run", "python", "app.py"])
 
     def install_external_dependencies(self, dir_path):
-        # Parse the pyproject.toml file for external dependencies
         toml_content = toml.load("app.toml")
         external_deps = (
             toml_content.get("tool", {})
@@ -224,7 +214,6 @@ class DeploymentManager:
         )
 
         for package, version in external_deps.items():
-            # Use poetry add to install the external dependencies
             subprocess.call(["poetry", "add", f"{package}=={version}"])
 
     def stage_exists(self, stage_name):
@@ -305,10 +294,11 @@ def create_directory_structure():
     print("Project structure initialized!")
 
 
-def main():
+def parse_args():
     parser = argparse.ArgumentParser(
         description="Deploy Snowflake UDFs and Stored Procedures."
     )
+
     parser.add_argument(
         "command",
         choices=["init", "test", "deploy", "upload", "add", "new", "ai"],
@@ -348,7 +338,10 @@ def main():
         help="Name of the package to zip and upload to the static folder.",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def execute_command(args):
     if args.command == "init":
         create_directory_structure()
         return
@@ -372,7 +365,6 @@ def main():
         return
 
     elif args.command == "ai":
-        # Get the component type and value dynamically.
         component_details = {
             k: v for k, v in vars(args).items() if k in ["udf", "sproc", "stream"] and v
         }
@@ -392,9 +384,7 @@ def main():
             colored(f"🤔 Enter the {component_type.upper()} name: ", "cyan")
         )
 
-        if SnowBot.udf_exists(
-            component_name
-        ):  # This method name may need to change based on what exactly it checks
+        if SnowBot.udf_exists(component_name):
             print(
                 colored(
                     f"⚠️ Component named {component_name} already exists! Choose another name or check your directories.",
@@ -417,3 +407,8 @@ def main():
         deployment_manager = DeploymentManager(deployment_args)
         deployment_manager.main()
         return
+
+
+def main():
+    args = parse_args()
+    execute_command(args)
