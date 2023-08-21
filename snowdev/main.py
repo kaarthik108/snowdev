@@ -369,7 +369,7 @@ def execute_command(args):
             print("Initializing AI...")
             SnowBot.ai_embed()
             return
-        
+
         component_details = {
             k: v for k, v in vars(args).items() if k in ["udf", "sproc", "stream"] and v
         }
@@ -389,7 +389,7 @@ def execute_command(args):
             colored(f"🤔 Enter the {component_type.upper()} name: ", "cyan")
         )
 
-        if SnowBot.udf_exists(component_name):
+        if SnowBot.component_exists(component_name, component_type):
             print(
                 colored(
                     f"⚠️ Component named {component_name} already exists! Choose another name or check your directories.",

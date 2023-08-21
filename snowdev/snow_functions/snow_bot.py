@@ -15,6 +15,7 @@ from snowdev.snow_functions.utils.templates.streamlit import (
 from snowdev.snow_functions.utils.templates.udf import TEMPLATE as UDF_TEMPLATE
 from snowdev.snow_functions.utils.ingest import DocumentProcessor, Secrets, Config
 
+
 class SnowBot:
 
     TEMPLATES = {
@@ -36,9 +37,11 @@ class SnowBot:
             print(colored("✅ Documents have been successfully embedded!", "green"))
             return result
         except Exception as e:
-            print(colored(f"❌ Error occurred while embedding documents: {str(e)}", "red"))
+            print(
+                colored(f"❌ Error occurred while embedding documents: {str(e)}", "red")
+            )
             return None
-    
+
     @staticmethod
     def get_qa_prompt_for_type(template_type):
         if template_type not in SnowBot.TEMPLATES:
@@ -49,9 +52,10 @@ class SnowBot:
         )
 
     @staticmethod
-    def udf_exists(udf_name):
-        udf_folder_path = os.path.join("src", "udf", udf_name)
-        return os.path.exists(udf_folder_path)
+    def component_exists(component_name, template_type):
+        folder_path = os.path.join("src", template_type, component_name)
+        return os.path.exists(folder_path)
+
 
     @staticmethod
     def get_chain_gpt(db):
@@ -94,36 +98,44 @@ class SnowBot:
             toml.dump(data, f)
 
     @staticmethod
-    def create_new_ai_component(udf_name, prompt, template_type):
+    def create_new_ai_component(component_name, prompt, template_type):
+        # Ensure that the template_type is valid
+        if template_type not in SnowBot.TEMPLATES:
+            print(colored(f"⚠️ Template type {template_type} is not recognized.", "yellow"))
+            return
+
         # Setting the QA_PROMPT dynamically
         SnowBot.QA_PROMPT = SnowBot.get_qa_prompt_for_type(template_type)
 
-        # Check if UDF exists
-        if SnowBot.udf_exists(udf_name):
-            print(colored(f"⚠️ UDF named {udf_name} already exists!", "yellow"))
+        # Check if the component already exists
+        if SnowBot.component_exists(component_name, template_type):
+            print(colored(f"⚠️ {template_type.upper()} named {component_name} already exists!", "yellow"))
             return
 
+        # Embedding and retrieving the content
         embeddings = OpenAIEmbeddings(
             openai_api_key=os.environ["OPENAI_API_KEY"], model="text-embedding-ada-002"
         )
         vectordb = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
         chain = SnowBot.get_chain_gpt(vectordb)
         response_content = chain(prompt)["result"]
-        print("the response content is: ", response_content)
         response_content = response_content.split("```python\n")[1].split("\n```")[0]
 
-        udf_folder = os.path.join("src", template_type, udf_name)
-        os.makedirs(udf_folder, exist_ok=True)
+        # Saving the content
+        component_folder = os.path.join("src", template_type, component_name)
+        os.makedirs(component_folder, exist_ok=True)
 
-        with open(os.path.join(udf_folder, f"app.py"), "w") as f:
+        with open(os.path.join(component_folder, f"app.py"), "w") as f:
             f.write(response_content)
 
+        # You might want to adjust dependencies based on the type or some other criteria
         dependencies = {"some-library": "1.0.0", "another-library": "2.0.1"}
         SnowBot.append_dependencies_to_toml(dependencies)
 
         print(
             colored(
-                f"✅ {template_type.upper()} {udf_name} generated successfully using AI!",
+                f"✅ {template_type.upper()} {component_name} generated successfully using AI!",
                 "green",
             )
         )
+

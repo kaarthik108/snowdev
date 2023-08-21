@@ -3,7 +3,7 @@ from snowflake.snowpark import Session
 import streamlit as st
 
 
-def get_snowflake_connection() -> Session:
+def get_snowflake_session() -> Session:
     try:
         from snowdev import SnowflakeConnection
 
@@ -15,7 +15,7 @@ def get_snowflake_connection() -> Session:
     return snow_session
 
 
-session = get_snowflake_connection()
+session = get_snowflake_session()
 laybuy_colour_palette = ["#751DFF", "#E1CFFF"]
 
 st.set_page_config(
