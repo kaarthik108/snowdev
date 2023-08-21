@@ -1,0 +1,18 @@
+name: Snowdev Release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+    paths:
+      - "snowdev/pyproject.toml"
+  workflow_dispatch: # Allows to trigger the workflow manually in GitHub UI
+
+jobs:
+  release:
+    uses: ./.github/workflows/_release.yml
+    with:
+      working-directory: snowdev
+    secrets: inherit
