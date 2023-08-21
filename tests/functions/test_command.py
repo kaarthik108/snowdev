@@ -15,7 +15,7 @@ class TestSnowDevCommand(unittest.TestCase):
             snowdev_main.execute_command(args)
 
             assert os.path.exists("_src")
-            assert os.path.exists("_src/stored_procs")
+            assert os.path.exists("_src/sproc")
             assert os.path.exists("_src/streamlit")
             assert os.path.exists("_src/udf")
             assert os.path.exists("_static")

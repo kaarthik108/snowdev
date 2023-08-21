@@ -10,23 +10,23 @@ from termcolor import colored
 class SnowHelperConfig(BaseModel):
     udf: str = None
     sproc: str = None
-    stream: str = None
+    streamlit: str = None
 
 
 class SnowHelper:
     SNOWFLAKE_ANACONDA_URL = "https://repo.anaconda.com/pkgs/snowflake/"
     BASE_PATHS = {
         "udf": "src/udf",
-        "sproc": "src/stored_proc",
-        "stream": "src/streamlit",
+        "sproc": "src/sproc",
+        "streamlit": "src/streamlit",
     }
     TEMPLATES = {
         "udf": {"py": "fillers/udf/fill.py", "toml": "fillers/udf/fill.toml"},
         "sproc": {
-            "py": "fillers/stored_procs/fill.py",
-            "toml": "fillers/stored_procs/fill.toml",
+            "py": "fillers/sproc/fill.py",
+            "toml": "fillers/sproc/fill.toml",
         },
-        "stream": {
+        "streamlit": {
             "py": "fillers/streamlit/fill.py",
             "yml": "fillers/streamlit/fill.yml",
         },
@@ -120,7 +120,7 @@ class SnowHelper:
         if not item_type:
             print(
                 colored(
-                    "Error: Please provide either --udf, --sproc, or --stream when using the 'new' command.",
+                    "Error: Please provide either --udf, --sproc, or --streamlit when using the 'new' command.",
                     "red",
                 )
             )
@@ -140,7 +140,7 @@ class SnowHelper:
         os.makedirs(new_item_path, exist_ok=True)
 
         # Handling the streamlit templates specifically
-        if item_type == "stream":
+        if item_type == "streamlit":
             for template_ext, output_name in [
                 ("py", "streamlit_app.py"),
                 ("yml", "environment.yml"),

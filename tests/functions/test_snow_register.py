@@ -41,8 +41,8 @@ def test_sproc_registration(mock_get_connection, mock_register):
 
     register = SnowflakeRegister(mock_session)
     register.main(
-        "src/stored_procs/sproc_name/app.py", "sproc_name", "snowdev", [], True
+        "src/sproc/sproc_name/app.py", "sproc_name", "snowdev", [], True
     )
     mock_register.assert_called_with(
-        "src/stored_procs/sproc_name/app.py", "sproc_name", "snowdev", [], None, True
+        "src/sproc/sproc_name/app.py", "sproc_name", "snowdev", [], None, True
     )

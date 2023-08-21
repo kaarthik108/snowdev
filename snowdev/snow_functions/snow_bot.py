@@ -104,7 +104,6 @@ class SnowBot:
             print(colored(f"⚠️ Template type {template_type} is not recognized.", "yellow"))
             return
 
-        # Setting the QA_PROMPT dynamically
         SnowBot.QA_PROMPT = SnowBot.get_qa_prompt_for_type(template_type)
 
         # Check if the component already exists
@@ -121,14 +120,16 @@ class SnowBot:
         response_content = chain(prompt)["result"]
         response_content = response_content.split("```python\n")[1].split("\n```")[0]
 
-        # Saving the content
         component_folder = os.path.join("src", template_type, component_name)
         os.makedirs(component_folder, exist_ok=True)
 
-        with open(os.path.join(component_folder, f"app.py"), "w") as f:
+        filename = "app.py"
+        if template_type == "streamlit":
+            filename = "streamlit_app.py"
+
+        with open(os.path.join(component_folder, filename), "w") as f:
             f.write(response_content)
 
-        # You might want to adjust dependencies based on the type or some other criteria
         dependencies = {"some-library": "1.0.0", "another-library": "2.0.1"}
         SnowBot.append_dependencies_to_toml(dependencies)
 

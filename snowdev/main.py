@@ -21,7 +21,7 @@ from snowdev import (
 class DeploymentArguments(BaseModel):
     udf: Optional[str]
     sproc: Optional[str]
-    stream: Optional[str]
+    streamlit: Optional[str]
     task: Optional[str]
     test: bool = False
     upload: Optional[str]
@@ -30,8 +30,8 @@ class DeploymentArguments(BaseModel):
 
 class DeploymentManager:
     UDF_PATH = "src/udf/"
-    SPROC_PATH = "src/stored_procs/"
-    STREAM_PATH = "src/streamlit/"
+    SPROC_PATH = "src/sproc/"
+    STREAMLIT_PATH = "src/streamlit/"
 
     def __init__(self, args):
         self.args = args
@@ -60,14 +60,14 @@ class DeploymentManager:
         deployment_path_map = {
             "udf": self.UDF_PATH,
             "sproc": self.SPROC_PATH,
-            "stream": self.STREAM_PATH,
+            "streamlit": self.STREAMLIT_PATH,
         }
 
         for arg_key, path in deployment_path_map.items():
             arg_value = getattr(self.args, arg_key, None)
             if arg_value:
                 # Adjust the filename based on the arg_key
-                filename = "streamlit_app.py" if arg_key == "stream" else "app.py"
+                filename = "streamlit_app.py" if arg_key == "streamlit" else "app.py"
                 self.deploy(arg_key, f"{path}{arg_value}/{filename}")
                 break
         else:
@@ -80,7 +80,7 @@ class DeploymentManager:
         if deployment_type in ["udf", "sproc"]:
             is_sproc = deployment_type == "sproc"
             self.deploy_function(filepath, is_sproc)
-        elif deployment_type == "stream":
+        elif deployment_type == "streamlit":
             self.deploy_streamlit(filepath)
 
     def deploy_function(self, filepath, is_sproc):
@@ -267,7 +267,7 @@ class DeploymentManager:
 def create_directory_structure():
     # Directories
     dirs_to_create = {
-        "_src": ["stored_procs", "streamlit", "udf"],
+        "_src": ["sproc", "streamlit", "udf"],
         "_static": ["packages"],
     }
 
@@ -313,7 +313,7 @@ def parse_args():
         help="The relative path to the Stored Procedure python file to deploy.",
     )
     parser.add_argument(
-        "--stream",
+        "--streamlit",
         type=str,
         help="The relative path to the Streamlit python file to deploy.",
     )
@@ -371,13 +371,13 @@ def execute_command(args):
             return
 
         component_details = {
-            k: v for k, v in vars(args).items() if k in ["udf", "sproc", "stream"] and v
+            k: v for k, v in vars(args).items() if k in ["udf", "sproc", "streamlit"] and v
         }
 
         if not component_details:
             print(
                 colored(
-                    "⚠️ Please specify a type (--udf, --sproc, or --stream) along with the ai command.",
+                    "⚠️ Please specify a type (--udf, --sproc, or --streamlit) along with the ai command.",
                     "yellow",
                 )
             )
