@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snowdev"
-version = "0.1.6"
+version = "0.1.7"
 description = "snowdev is a Python package that allows you to deploy Snowflake UDFs, stored procedures, tasks, streamlit from your local environment using snowpark"
 authors = ["kaarthik <kaarthikandavar@gmail.com>"]
 readme = "README.md"
