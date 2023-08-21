@@ -13,7 +13,7 @@ from snowdev.snow_functions.utils.templates.streamlit import (
     TEMPLATE as STREAMLIT_TEMPLATE,
 )
 from snowdev.snow_functions.utils.templates.udf import TEMPLATE as UDF_TEMPLATE
-
+from snowdev.snow_functions.utils.ingest import DocumentProcessor, Secrets, Config
 
 class SnowBot:
 
@@ -23,6 +23,22 @@ class SnowBot:
         "streamlit": STREAMLIT_TEMPLATE,
     }
 
+    @staticmethod
+    def ai_embed():
+        """
+        Embed all the documents in the knowledge folder.
+        """
+        secrets = Secrets(OPENAI_API_KEY=os.environ["OPENAI_API_KEY"])
+        config = Config()
+        doc_processor = DocumentProcessor(secrets, config)
+        try:
+            result = doc_processor.process()
+            print(colored("✅ Documents have been successfully embedded!", "green"))
+            return result
+        except Exception as e:
+            print(colored(f"❌ Error occurred while embedding documents: {str(e)}", "red"))
+            return None
+    
     @staticmethod
     def get_qa_prompt_for_type(template_type):
         if template_type not in SnowBot.TEMPLATES:

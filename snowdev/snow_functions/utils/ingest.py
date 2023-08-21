@@ -34,15 +34,3 @@ class DocumentProcessor:
         )
         vector_store.persist()
         return vector_store
-
-
-def run():
-    secrets = Secrets(OPENAI_API_KEY=os.environ["OPENAI_API_KEY"])
-    config = Config()
-    doc_processor = DocumentProcessor(secrets, config)
-    result = doc_processor.process()
-    return result
-
-
-if __name__ == "__main__":
-    run()

@@ -305,11 +305,6 @@ def parse_args():
         help="The main command to execute.",
     )
     parser.add_argument(
-        "--init",
-        action="store_true",
-        help="Initialize the snowdev project structure.",
-    )
-    parser.add_argument(
         "--udf", type=str, help="The relative path to the UDF python file to deploy."
     )
     parser.add_argument(
@@ -336,6 +331,11 @@ def parse_args():
         "--package",
         type=str,
         help="Name of the package to zip and upload to the static folder.",
+    )
+    parser.add_argument(
+        "--embed",
+        action="store_true",
+        help="Run the embeddings",
     )
 
     return parser.parse_args()
@@ -365,6 +365,11 @@ def execute_command(args):
         return
 
     elif args.command == "ai":
+        if args.embed:
+            print("Initializing AI...")
+            SnowBot.ai_embed()
+            return
+        
         component_details = {
             k: v for k, v in vars(args).items() if k in ["udf", "sproc", "stream"] and v
         }
