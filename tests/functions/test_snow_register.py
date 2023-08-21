@@ -40,9 +40,7 @@ def test_sproc_registration(mock_get_connection, mock_register):
     mock_session.use_role.return_value = None
 
     register = SnowflakeRegister(mock_session)
-    register.main(
-        "src/sproc/sproc_name/app.py", "sproc_name", "snowdev", [], True
-    )
+    register.main("src/sproc/sproc_name/app.py", "sproc_name", "snowdev", [], True)
     mock_register.assert_called_with(
         "src/sproc/sproc_name/app.py", "sproc_name", "snowdev", [], None, True
     )

@@ -371,7 +371,9 @@ def execute_command(args):
             return
 
         component_details = {
-            k: v for k, v in vars(args).items() if k in ["udf", "sproc", "streamlit"] and v
+            k: v
+            for k, v in vars(args).items()
+            if k in ["udf", "sproc", "streamlit"] and v
         }
 
         if not component_details:

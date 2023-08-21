@@ -15,20 +15,29 @@ class SnowHelperConfig(BaseModel):
 
 class SnowHelper:
     SNOWFLAKE_ANACONDA_URL = "https://repo.anaconda.com/pkgs/snowflake/"
+
     BASE_PATHS = {
         "udf": "src/udf",
         "sproc": "src/sproc",
         "streamlit": "src/streamlit",
     }
+
+    @staticmethod
+    def get_template_path(relative_path):
+        return pkg_resources.resource_filename("snowdev", relative_path)
+
     TEMPLATES = {
-        "udf": {"py": "fillers/udf/fill.py", "toml": "fillers/udf/fill.toml"},
+        "udf": {
+            "py": get_template_path("fillers/udf/fill.py"),
+            "toml": get_template_path("fillers/udf/fill.toml"),
+        },
         "sproc": {
-            "py": "fillers/sproc/fill.py",
-            "toml": "fillers/sproc/fill.toml",
+            "py": get_template_path("fillers/sproc/fill.py"),
+            "toml": get_template_path("fillers/sproc/fill.toml"),
         },
         "streamlit": {
-            "py": "fillers/streamlit/fill.py",
-            "yml": "fillers/streamlit/fill.yml",
+            "py": get_template_path("fillers/streamlit/fill.py"),
+            "yml": get_template_path("fillers/streamlit/fill.yml"),
         },
     }
 

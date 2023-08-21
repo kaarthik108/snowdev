@@ -56,7 +56,6 @@ class SnowBot:
         folder_path = os.path.join("src", template_type, component_name)
         return os.path.exists(folder_path)
 
-
     @staticmethod
     def get_chain_gpt(db):
         """
@@ -101,14 +100,23 @@ class SnowBot:
     def create_new_ai_component(component_name, prompt, template_type):
         # Ensure that the template_type is valid
         if template_type not in SnowBot.TEMPLATES:
-            print(colored(f"⚠️ Template type {template_type} is not recognized.", "yellow"))
+            print(
+                colored(
+                    f"⚠️ Template type {template_type} is not recognized.", "yellow"
+                )
+            )
             return
 
         SnowBot.QA_PROMPT = SnowBot.get_qa_prompt_for_type(template_type)
 
         # Check if the component already exists
         if SnowBot.component_exists(component_name, template_type):
-            print(colored(f"⚠️ {template_type.upper()} named {component_name} already exists!", "yellow"))
+            print(
+                colored(
+                    f"⚠️ {template_type.upper()} named {component_name} already exists!",
+                    "yellow",
+                )
+            )
             return
 
         # Embedding and retrieving the content
@@ -139,4 +147,3 @@ class SnowBot:
                 "green",
             )
         )
-

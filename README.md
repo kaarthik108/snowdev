@@ -2,6 +2,15 @@
 
 SnowDev is a command-line utility designed for deploying various components related to Snowflake such as UDFs, stored procedures, and Streamlit applications using **Snowpark**. This tool streamlines tasks like initializing directories, local testing, uploading, and auto create components code using AI.
 
+## Setup
+
+```bash
+ pyenv install 3.10.0 
+ pyenv local 3.10.0 
+ pip install snowdev or poetry add snowdev
+ snowdev init
+```
+
 ## Usage
 
 ``` bash
@@ -62,9 +71,12 @@ snowdev <command> [options]
 
 ## Roadmap
 
-- [x] Deploy UDFs and Stored Procedures.
-- [x] AI interactions for embedding and suggestions.
-- [ ] Use AI to modify existing code for optimization.
+- [x] Support for UDFs and Stored Procedures
+- [x] Support for Streamlit
+- [x] AI interactions for embedding and suggestions
+- [ ] Use AI to modify existing code for optimization
+- [ ] Adding more granularity for AI commands
+- [ ] Support for snowflake Tasks
 
 
 ## Contributions
