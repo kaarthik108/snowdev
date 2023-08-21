@@ -76,7 +76,14 @@ class SnowflakeRegister:
         self._drop_entity(sproc_name, arg_type, "PROCEDURE")
 
     def register_sproc(
-        self, func, function_name, packages, stage_location, imports, is_temp=False
+        self,
+        func,
+        function_name,
+        packages,
+        stage_location,
+        imports,
+        is_temp=False,
+        execute_as="OWNER",
     ):
         replace = not is_temp
         is_permanent = not is_temp
@@ -90,7 +97,7 @@ class SnowflakeRegister:
             is_permanent=is_permanent,
             stage_location=f"@{stage_location}/sproc",
             replace=replace,
-            execute_as="CALLER",
+            execute_as=execute_as,
             strict=True,
         )
 
@@ -125,10 +132,17 @@ class SnowflakeRegister:
         imports,
         is_sproc,
         is_temp=False,
+        execute_as="OWNER",
     ):
         if is_sproc:
             self.register_sproc(
-                func, function_name, packages, stage_location, imports, is_temp
+                func,
+                function_name,
+                packages,
+                stage_location,
+                imports,
+                is_temp,
+                execute_as,
             )
         else:
             self.register_udf(
@@ -147,11 +161,27 @@ class SnowflakeRegister:
             elif not is_sproc and self.function_exists(temp_entity_name):
                 self.drop_function(temp_entity_name, temp_arg_type)
 
+    def extract_comment_from_file(self, file_path, comment_marker="# execute as"):
+        """Extract a specific comment from the file."""
+        with open(file_path, "r") as file:
+            for line in file:
+                if comment_marker in line:
+                    return line.strip().replace(comment_marker, "").strip()
+        return None
+
     def main(
         self, func, function_name, stage_location, packages, is_sproc, imports=None
     ):
         temp_entity_name = "temp_" + function_name
         temp_arg_type = None
+        execute_as_comment = self.extract_comment_from_file(func, "# execute as")
+
+        if execute_as_comment:
+            # Use the extracted comment when registering.
+            execute_as_value = execute_as_comment
+        else:
+            execute_as_value = "OWNER"
+
         # Get the directory path for the function
         dir_path = os.path.dirname(func)
         connection_details = self.get_connection_details_from_toml(dir_path)
@@ -193,6 +223,7 @@ class SnowflakeRegister:
                 imports,
                 is_sproc,
                 is_temp=True,
+                execute_as=execute_as_value,
             )
 
             print(
@@ -210,7 +241,13 @@ class SnowflakeRegister:
                 colored(function_name, "magenta"),
             )
             self._register_entity(
-                func, function_name, stage_location, packages, imports, is_sproc
+                func,
+                function_name,
+                stage_location,
+                packages,
+                imports,
+                is_sproc,
+                execute_as=execute_as_value,
             )
 
             self._drop_temp_entity(temp_entity_name, temp_arg_type, is_sproc)

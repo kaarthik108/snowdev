@@ -1,0 +1,11 @@
+[tool.connection]
+database = ""
+schema = ""
+role = ""
+
+[tool.poetry.dependencies]
+python = "3.10.12"
+snowflake-snowpark-python = "1.5.1"
+pandas= "1.5.3"
+cachetools = "4.2.2"
+nltk = "3.8.1"

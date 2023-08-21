@@ -149,7 +149,10 @@ test.py
 
 install-snowpark-ml-1.0.2.sh
 
-src/
-static/
+/src/
+/static/
+
+!examples/src/
+!examples/static/
 
 chroma_db/

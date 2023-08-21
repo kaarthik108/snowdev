@@ -86,7 +86,6 @@ class DeploymentManager:
     def deploy_function(self, filepath, is_sproc):
         dir_path, filename = os.path.split(filepath)
         function_name = os.path.basename(dir_path)
-        print("dir path is ------", dir_path)
         packages = self.get_packages_from_toml(dir_path)
         imports = self.get_imports(dir_path)
         # Extract just the package names without versions
