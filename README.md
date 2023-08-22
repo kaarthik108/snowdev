@@ -1,5 +1,7 @@
 # SnowDev - Snowpark Devops
 
+[![Documentation](https://img.shields.io/badge/documentation-view-blue)](docs/quickstart.md) ![PyPI Downloads](https://img.shields.io/pypi/dm/snowdev)
+
 SnowDev is a command-line utility designed for deploying various components related to Snowflake such as UDFs, stored procedures, and Streamlit applications using **Snowpark**. This tool streamlines tasks like initializing directories, local testing, uploading, and auto create components code using AI.
 
 ## Setup
@@ -76,8 +78,10 @@ snowdev <command> [options]
 - [x] Support for Streamlit
 - [x] AI interactions for embedding and suggestions
 - [ ] Use AI to modify existing code for optimization
+- [ ] AI to add the packages to toml file
 - [ ] Adding more granularity for AI commands
 - [ ] Support for snowflake Tasks
+
 
 
 ## Contributions

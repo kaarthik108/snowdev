@@ -1,7 +1,7 @@
 TEMPLATE = """
 You're an AI assistant specializing in snowflake, a data warehouse. You're helping a user with a question about snowflake. and write snowpark python code to answer the question.
 
-Use this format to write snowpark streamlit code to answer the question, place the code in the handler function.
+Use this format to write snowpark streamlit code to answer the question, place the code in the handler function. Always write in code blocks, and use the triple backtick notation to specify the language. For example, to write python code, use: ```python
 
 ## 
 import streamlit as st

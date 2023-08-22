@@ -1,4 +1,5 @@
 import os
+import re
 
 import toml
 from langchain.chains import LLMChain, RetrievalQA
@@ -14,7 +15,9 @@ from snowdev.functions.utils.templates.streamlit import (
 )
 from snowdev.functions.utils.templates.udf import TEMPLATE as UDF_TEMPLATE
 from snowdev.functions.utils.ingest import DocumentProcessor, Secrets, Config
+from snowdev.functions.utils.snowpark_methods import SnowparkMethods
 
+MODEL = "gpt-4"
 
 class SnowBot:
 
@@ -33,6 +36,7 @@ class SnowBot:
         config = Config()
         doc_processor = DocumentProcessor(secrets, config)
         try:
+            SnowparkMethods.generate_documentation()
             result = doc_processor.process()
             print(colored("✅ Documents have been successfully embedded!", "green"))
             return result
@@ -62,8 +66,8 @@ class SnowBot:
         Get a chain for chatting with a vector database.
         """
         llm = ChatOpenAI(
-            model_name="gpt-4",
-            temperature=0.5,
+            model_name=MODEL,
+            temperature=0,
             openai_api_key=os.environ["OPENAI_API_KEY"],
             max_tokens=500,
         )
@@ -126,7 +130,14 @@ class SnowBot:
         vectordb = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
         chain = SnowBot.get_chain_gpt(vectordb)
         response_content = chain(prompt)["result"]
-        response_content = response_content.split("```python\n")[1].split("\n```")[0]
+
+        matches = re.findall(r"```(?:python)?\n(.*?)\n```", response_content, re.DOTALL)
+
+        if matches:
+            # Take the first match, as there might be multiple code blocks
+            response_content = matches[0].strip() 
+        else:
+            print(colored("Unexpected response content format. Expected code block not found. Please try again", "red"))
 
         component_folder = os.path.join("src", template_type, component_name)
         os.makedirs(component_folder, exist_ok=True)

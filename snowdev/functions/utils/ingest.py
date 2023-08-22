@@ -15,8 +15,8 @@ class Secrets(BaseModel):
 class Config(BaseModel):
     chunk_size: int = 1000
     chunk_overlap: int = 0
-    docs_dir: str = "snowdev/snow_functions/utils/knowledge"
-    docs_glob: str = "**/*.py"
+    docs_dir: str = "snowdev/functions/utils/knowledge"
+    docs_glob: str = "**/*"
 
 
 class DocumentProcessor:
