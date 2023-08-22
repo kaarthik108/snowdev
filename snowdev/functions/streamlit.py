@@ -13,8 +13,6 @@ class StreamlitAppDeployer:
         self.warehouse = self.session.get_current_warehouse().replace('"', "")
 
     def create_stage_if_not_exists(self, stage_name):
-        # Using SQL commands in string formats can be error-prone.
-        # Ensure proper validations and avoid SQL injections.
         self.session.sql(
             f"CREATE STAGE IF NOT EXISTS {stage_name} DIRECTORY = (ENABLE = TRUE)"
         ).collect()
@@ -77,7 +75,6 @@ class StreamlitAppDeployer:
 
     def create_streamlit_app(self, streamlit_name, stage_name, app_name):
         self.database = self.session.get_current_database().replace('"', "")
-        # Again, ensure SQL command safety.
         self.session.sql(
             f"""
             CREATE OR REPLACE STREAMLIT "{streamlit_name}" 

@@ -44,7 +44,8 @@ snowdev <command> [options]
 - **Usage**: `snowdev new --sproc "test_script"`
 
 ### `ai`
-- **Description**: Interact with AI components and embeddings. It can also help in creating new AI components code based on the description.
+- **Description**: Interact with AI components and embeddings. It can also help in creating new AI components code based on the description, 
+  make sure to have executed `snowdev ai --embed` to generate embeddings.
 - **Usage**: `snowdev ai --streamlit "Want to see a bar chart on the order table"`
 
 ## Options

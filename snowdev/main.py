@@ -13,7 +13,6 @@ from snowdev import (
     SnowHelper,
     SnowPackageZip,
     StreamlitAppDeployer,
-    TaskRunner,
     SnowBot,
 )
 
@@ -22,7 +21,6 @@ class DeploymentArguments(BaseModel):
     udf: Optional[str]
     sproc: Optional[str]
     streamlit: Optional[str]
-    task: Optional[str]
     test: bool = False
     upload: Optional[str]
     package: Optional[str]
@@ -145,15 +143,6 @@ class DeploymentManager:
         except Exception as e:
             self.handle_deployment_error(e, "Streamlit app")
 
-    def deploy_task(self, taskname):
-        runner = TaskRunner(taskname)
-        try:
-            runner.run_task()
-            success_msg = colored(f"Deployed task {taskname} successfully.", "green")
-            print(success_msg)
-        except Exception as e:
-            self.handle_deployment_error(e, "task")
-
     def deploy_package(self, package_name, upload):
         try:
             SnowPackageZip(
@@ -259,6 +248,9 @@ class DeploymentManager:
                         file_path, remote_path, overwrite=True, auto_compress=False
                     )
 
+    def deploy_task(self, taskname):
+        pass
+
     def deploy_pipe(self, pipe_name):
         pass
 
@@ -295,7 +287,7 @@ def create_directory_structure():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Deploy Snowflake UDFs and Stored Procedures."
+        description="Deploy Snowflake UDFs, Stored Procedures and Streamlit apps."
     )
 
     parser.add_argument(
@@ -304,19 +296,18 @@ def parse_args():
         help="The main command to execute.",
     )
     parser.add_argument(
-        "--udf", type=str, help="The relative path to the UDF python file to deploy."
+        "--udf", type=str, help="The name of the udf."
     )
     parser.add_argument(
         "--sproc",
         type=str,
-        help="The relative path to the Stored Procedure python file to deploy.",
+        help="The name of the stored procedure.",
     )
     parser.add_argument(
         "--streamlit",
         type=str,
-        help="The relative path to the Streamlit python file to deploy.",
+        help="The name of the streamlit app.",
     )
-    parser.add_argument("--task", type=str, help="The task name to schedule.")
 
     parser.add_argument(
         "--upload",

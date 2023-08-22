@@ -107,4 +107,24 @@ Now that you have SnowDev installed and initialized, it's time to see it in acti
 
 ---
 
+### Deploying using AI
+
+1. **Initialize by embedding the knowledge**
+
+    This embeds the knowledge base into a in memory chroma db vector DB:
+
+    ```bash
+    snowdev ai --embed
+    ```
+
+2. **Deploy a new stored procedure using AI**
+
+    Give a clear description of what you need the stored procedure to do:
+
+    ```bash
+    snowdev ai --sproc "I want to fetch data from order table and predict the bad orders using snowflake ml"
+    ```
+
+---
+
 **Congratulations!** You've successfully deployed various components using SnowDev. Dive deeper and explore other commands and options mentioned in the main README to make the most out of SnowDev.
