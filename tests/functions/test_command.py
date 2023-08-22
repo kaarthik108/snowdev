@@ -1,46 +1,55 @@
-import unittest
 import os
-from unittest.mock import patch, MagicMock
-from snowdev import main as snowdev_main
 from tempfile import TemporaryDirectory
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from snowdev import main as snowdev_main
 
 
-class TestSnowDevCommand(unittest.TestCase):
-    def test_init_command(self):
-        with TemporaryDirectory() as temp_dir:
-            os.chdir(temp_dir)
-            args = MagicMock()
-            args.command = "init"
-
-            snowdev_main.execute_command(args)
-
-            assert os.path.exists("_src")
-            assert os.path.exists("_src/sproc")
-            assert os.path.exists("_src/streamlit")
-            assert os.path.exists("_src/udf")
-            assert os.path.exists("_static")
-            assert os.path.exists("_static/packages")
-
-    @patch("snowdev.main.DeploymentManager")
-    def test_test_command(self, MockDeploymentManager):
-        args = MagicMock()
-        args.command = "test"
-        mock_manager = MockDeploymentManager.return_value
-
-        snowdev_main.execute_command(args)
-
-        mock_manager.test_locally.assert_called_once()
-
-    @patch("snowdev.main.DeploymentManager")
-    def test_deploy_command(self, MockDeploymentManager):
-        args = MagicMock()
-        args.command = "deploy"
-        mock_manager = MockDeploymentManager.return_value
-
-        snowdev_main.execute_command(args)
-
-        mock_manager.main.assert_called_once()
+@pytest.fixture
+def setup_args():
+    return MagicMock()
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.fixture
+def temp_dir():
+    with TemporaryDirectory() as tmp:
+        yield tmp
+
+
+def test_execute_init_command_creates_expected_directories(setup_args, temp_dir):
+    """Test that the init command creates the expected directory structure."""
+    os.chdir(temp_dir)
+    setup_args.command = "init"
+    snowdev_main.execute_command(setup_args)
+
+    expected_dirs = [
+        "_src",
+        "_src/sproc",
+        "_src/streamlit",
+        "_src/udf",
+        "_static",
+        "_static/packages",
+    ]
+
+    for dir in expected_dirs:
+        assert os.path.exists(dir), f"Expected directory '{dir}' not found."
+
+
+@patch("snowdev.main.DeploymentManager")
+def test_execute_test_command_calls_test_locally(MockDeploymentManager, setup_args):
+    """Test that the test command invokes the test_locally method of DeploymentManager."""
+    setup_args.command = "test"
+    mock_manager = MockDeploymentManager.return_value
+    snowdev_main.execute_command(setup_args)
+    mock_manager.test_locally.assert_called_once()
+
+
+@patch("snowdev.main.DeploymentManager")
+def test_execute_deploy_command_calls_main_method(MockDeploymentManager, setup_args):
+    """Test that the deploy command invokes the main method of DeploymentManager."""
+    setup_args.command = "deploy"
+    mock_manager = MockDeploymentManager.return_value
+    snowdev_main.execute_command(setup_args)
+    mock_manager.main.assert_called_once()

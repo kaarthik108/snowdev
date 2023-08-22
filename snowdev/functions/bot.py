@@ -8,12 +8,12 @@ from langchain.prompts.prompt import PromptTemplate
 from langchain.vectorstores import Chroma
 from termcolor import colored
 
-from snowdev.snow_functions.utils.templates.sproc import TEMPLATE as SPROC_TEMPLATE
-from snowdev.snow_functions.utils.templates.streamlit import (
+from snowdev.functions.utils.templates.sproc import TEMPLATE as SPROC_TEMPLATE
+from snowdev.functions.utils.templates.streamlit import (
     TEMPLATE as STREAMLIT_TEMPLATE,
 )
-from snowdev.snow_functions.utils.templates.udf import TEMPLATE as UDF_TEMPLATE
-from snowdev.snow_functions.utils.ingest import DocumentProcessor, Secrets, Config
+from snowdev.functions.utils.templates.udf import TEMPLATE as UDF_TEMPLATE
+from snowdev.functions.utils.ingest import DocumentProcessor, Secrets, Config
 
 
 class SnowBot:

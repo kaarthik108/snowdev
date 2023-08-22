@@ -7,4 +7,3 @@ snowflake:
   role:
 dependencies:
   - pyyaml
-  - plotly
