@@ -1,2 +1,2 @@
-from .snow_connect import SnowflakeConnection
-from .snow_helper import SnowHelper
+from .connect import SnowflakeConnection
+from .helper import SnowHelper

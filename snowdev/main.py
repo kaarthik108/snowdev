@@ -266,8 +266,8 @@ class DeploymentManager:
 def create_directory_structure():
     # Directories
     dirs_to_create = {
-        "_src": ["sproc", "streamlit", "udf"],
-        "_static": ["packages"],
+        "src": ["sproc", "streamlit", "udf"],
+        "static": ["packages"],
     }
 
     for root_dir, sub_dirs in dirs_to_create.items():

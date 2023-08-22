@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import os
 from typing import Any, Dict
 from termcolor import colored
 
-import yaml
 from snowflake.snowpark.session import Session
 from snowflake.snowpark.version import VERSION
 
@@ -94,75 +95,3 @@ class SnowflakeConnection:
         )
 
         return info
-
-
-import yaml
-
-
-class SnowpipeRunner(SnowflakeConnection):
-    """
-    A class to handle running snowpipes in Snowflake.
-
-    Attributes
-    ----------
-    session : snowflake.snowpark.Session
-        a Snowflake session object
-    pipe_name : str
-        the name of the pipe to run
-    yml_path : str
-        the path to the snowpipe.yml file
-    config : dict
-        the configuration dictionary for the pipe
-    sql_path : str
-        the path to the SQL file to run
-    pipe : dict
-        the configuration dictionary for the pipe
-
-    Methods
-    -------
-    _load_yml()
-        Loads the snowpipe.yml file
-    _get_pipe_info()
-        Gets the pipe configuration from the snowpipe.yml file
-    run_sql_with_yaml()
-        Runs the SQL file with the YAML configuration
-    """
-
-    def __init__(self, pipe_name):
-        super().__init__()
-        self.session = self.get_session()
-        self.yml_path = "src/snowpipe/snowpipe.yml"
-        self.config = self._load_yml()
-        self.pipe_name = pipe_name
-        self.sql_path = f"src/snowpipe/{self.pipe_name}.sql"
-        self.pipe = self._get_pipe_info()
-
-    def _load_yml(self):
-        with open(self.yml_path, "r") as file:
-            return yaml.safe_load(file)
-
-    def _get_pipe_info(self):
-        for pipe in self.config["pipe"]:
-            if pipe["name"] == self.pipe_name:
-                return pipe
-        raise ValueError(f"No pipe configuration found for '{self.pipe_name}'.")
-
-    def handler_sql_with_yaml(self):
-        with open(self.sql_path, "r") as sql_file:
-            sql_template = sql_file.read()
-
-        formatted_sql = sql_template.format(
-            self.pipe["name"],
-            self.pipe["database"],
-            self.pipe["schema"],
-            self.pipe["table"],
-            self.pipe["stage"],
-            self.pipe["stage_url"],
-            self.pipe["file_format"],
-            self.pipe["auto_ingest"],
-        )
-
-        self.session.sql(formatted_sql).collect()
-
-    def handler_pipe(self):
-        self.run_sql_with_yaml()
