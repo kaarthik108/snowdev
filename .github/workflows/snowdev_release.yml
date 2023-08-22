@@ -7,13 +7,13 @@ on:
     branches:
       - main
     paths:
-      - "snowdev/pyproject.toml"
+      - "pyproject.toml"
   workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - "snowdev/pyproject.toml"
+      - "pyproject.toml"
 
 jobs:
   release:

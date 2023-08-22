@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "snowdev"
 version = "0.1.8"
-description = "snowdev: DevOps toolkit for Snowflake, facilitating seamless deployment of UDFs, stored procedures, and Streamlit apps using Snowpark's capabilities right from your local environment"
+description = "snowdev: DevOps toolkit for Snowflake, facilitating seamless deployment of UDFs, stored procedures, and Streamlit apps using Snowpark's capabilities right from your local environment."
 authors = ["kaarthik <kaarthikandavar@gmail.com>"]
 readme = "README.md"
 homepage = "https://github.com/kaarthik108/snowdev"
