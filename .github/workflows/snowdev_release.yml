@@ -8,7 +8,12 @@ on:
       - main
     paths:
       - "snowdev/pyproject.toml"
-  workflow_dispatch: # Allows to trigger the workflow manually in GitHub UI
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "snowdev/pyproject.toml"
 
 jobs:
   release:
