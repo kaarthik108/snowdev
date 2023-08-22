@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snowdev"
-version = "0.1.9"
+version = "0.1.10"
 description = "snowdev: DevOps toolkit for Snowflake, facilitating seamless deployment of UDFs, stored procedures, and Streamlit apps using Snowpark's capabilities right from your local environment."
 authors = ["kaarthik <kaarthikandavar@gmail.com>"]
 readme = "README.md"
@@ -17,6 +17,7 @@ python = ">=3.10.0,<3.11.0"
 pydantic = "1.10.9"
 termcolor = "2.3.0"
 "snowflake-snowpark-python" = { version = "1.5.1", extras = ["pandas"] }
+snowflake-ml-python = "1.0.5"
 pyyaml = "^6.0.1"
 toml = "^0.10.2"
 openai = "^0.27.8"

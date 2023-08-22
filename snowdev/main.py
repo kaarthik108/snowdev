@@ -256,14 +256,17 @@ class DeploymentManager:
 
 
 def create_directory_structure():
-    # Directories
     dirs_to_create = {
         "src": ["sproc", "streamlit", "udf"],
         "static": ["packages"],
     }
 
+    # Initialize a flag to check if the structure already exists
+    structure_already_exists = True
+
     for root_dir, sub_dirs in dirs_to_create.items():
         if not os.path.exists(root_dir):
+            structure_already_exists = False
             os.mkdir(root_dir)
             for sub_dir in sub_dirs:
                 os.mkdir(os.path.join(root_dir, sub_dir))
@@ -271,18 +274,32 @@ def create_directory_structure():
     files_to_create = [".env", ".gitignore", "pyproject.toml"]
 
     if not os.path.exists(".env"):
+        structure_already_exists = False
         with open(".env", "w") as f:
             f.write("")
 
     if not os.path.exists(".gitignore"):
+        structure_already_exists = False
         with open(".gitignore", "w") as f:
             f.write("*.pyc\n__pycache__/\n.env")
 
     if not os.path.exists("pyproject.toml"):
-        with open("pyproject.toml", "w") as f:
-            f.write("")
+        structure_already_exists = False
+        template_path = SnowHelper.get_template_path("fillers/pyproject.toml")
+        try:
+            with open(template_path, "r") as template_file:
+                content = template_file.read()
+            
+            with open("pyproject.toml", "w") as f:
+                f.write(content)
+        except FileNotFoundError:
+            print(colored(f"Error: Template {template_path} not found!", "red"))
 
-    print("Project structure initialized!")
+    if structure_already_exists:
+        print(colored("Project structure is already initialized!", "yellow"))
+    else:
+        print(colored("Project structure initialized!", "green"))
+
 
 
 def parse_args():
