@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snowdev"
-version = "0.1.10"
+version = "0.1.11"
 description = "snowdev: DevOps toolkit for Snowflake, facilitating seamless deployment of UDFs, stored procedures, and Streamlit apps using Snowpark's capabilities right from your local environment."
 authors = ["kaarthik <kaarthikandavar@gmail.com>"]
 readme = "README.md"
@@ -21,15 +21,15 @@ snowflake-ml-python = "1.0.5"
 pyyaml = "^6.0.1"
 toml = "^0.10.2"
 openai = "^0.27.8"
-langchain = "^0.0.265"
+langchain = "0.0.265"
+tiktoken = "0.4.0"
+unstructured = "0.9.3"
 
 [tool.poetry.dev-dependencies]
 black = "^22.10.0"
-tiktoken = "0.4.0"
-unstructured = "^0.9.3"
 
 [tool.poetry.scripts]
-snowdev = "snowdev.main:main"
+snowdev = "snowdev.cli.main:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

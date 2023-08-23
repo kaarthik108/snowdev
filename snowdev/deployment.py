@@ -1,10 +1,9 @@
-import argparse
 import os
 import subprocess
 from typing import Optional
 
 import toml
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from termcolor import colored
 
 from snowdev import (
@@ -13,7 +12,6 @@ from snowdev import (
     SnowHelper,
     SnowPackageZip,
     StreamlitAppDeployer,
-    SnowBot,
 )
 
 
@@ -25,13 +23,32 @@ class DeploymentArguments(BaseModel):
     upload: Optional[str]
     package: Optional[str]
 
+    @validator("udf", "sproc", "streamlit", pre=True, always=True)
+    def path_exists(cls, value, values, field, **kwargs):
+        if value:
+            path = ""
+            if "udf" in field.name:
+                path = os.path.join(DeploymentManager.UDF_PATH, value)
+            elif "sproc" in field.name:
+                path = os.path.join(DeploymentManager.SPROC_PATH, value)
+            elif "streamlit" in field.name:
+                path = os.path.join(DeploymentManager.STREAMLIT_PATH, value)
+
+            if not os.path.exists(path):
+                error_message = colored(
+                    f"\n❌ ERROR: The specified path '{path}' does not exist. Please ensure the path is correct and try again.\n",
+                    "red",
+                )
+                raise ValueError(error_message)
+        return value
+
 
 class DeploymentManager:
     UDF_PATH = "src/udf/"
     SPROC_PATH = "src/sproc/"
     STREAMLIT_PATH = "src/streamlit/"
 
-    def __init__(self, args):
+    def __init__(self, args=None):
         self.args = args
         self.stage_name = "SNOWDEV"
         self.session = SnowflakeConnection().get_session()
@@ -115,7 +132,7 @@ class DeploymentManager:
             )
             return
 
-        print("packages are----", packages)
+        # print("packages are----", packages)
         try:
             self.snow_deploy = SnowflakeRegister(session=self.session)
             self.snow_deploy.main(
@@ -254,175 +271,48 @@ class DeploymentManager:
     def deploy_pipe(self, pipe_name):
         pass
 
-
-def create_directory_structure():
-    dirs_to_create = {
-        "src": ["sproc", "streamlit", "udf"],
-        "static": ["packages"],
-    }
-
-    # Initialize a flag to check if the structure already exists
-    structure_already_exists = True
-
-    for root_dir, sub_dirs in dirs_to_create.items():
-        if not os.path.exists(root_dir):
-            structure_already_exists = False
-            os.mkdir(root_dir)
-            for sub_dir in sub_dirs:
-                os.mkdir(os.path.join(root_dir, sub_dir))
-
-    files_to_create = [".env", ".gitignore", "pyproject.toml"]
-
-    if not os.path.exists(".env"):
-        structure_already_exists = False
-        with open(".env", "w") as f:
-            f.write("")
-
-    if not os.path.exists(".gitignore"):
-        structure_already_exists = False
-        with open(".gitignore", "w") as f:
-            f.write("*.pyc\n__pycache__/\n.env")
-
-    if not os.path.exists("pyproject.toml"):
-        structure_already_exists = False
-        template_path = SnowHelper.get_template_path("fillers/pyproject.toml")
-        try:
-            with open(template_path, "r") as template_file:
-                content = template_file.read()
-            
-            with open("pyproject.toml", "w") as f:
-                f.write(content)
-        except FileNotFoundError:
-            print(colored(f"Error: Template {template_path} not found!", "red"))
-
-    if structure_already_exists:
-        print(colored("Project structure is already initialized!", "yellow"))
-    else:
-        print(colored("Project structure initialized!", "green"))
-
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Deploy Snowflake UDFs, Stored Procedures and Streamlit apps."
-    )
-
-    parser.add_argument(
-        "command",
-        choices=["init", "test", "deploy", "upload", "add", "new", "ai"],
-        help="The main command to execute.",
-    )
-    parser.add_argument(
-        "--udf", type=str, help="The name of the udf."
-    )
-    parser.add_argument(
-        "--sproc",
-        type=str,
-        help="The name of the stored procedure.",
-    )
-    parser.add_argument(
-        "--streamlit",
-        type=str,
-        help="The name of the streamlit app.",
-    )
-
-    parser.add_argument(
-        "--upload",
-        type=str,
-        choices=[
-            "static"
-        ],  # expand this list if you have other things to upload in the future
-        help="Specify what to upload (e.g., static).",
-    )
-    parser.add_argument(
-        "--package",
-        type=str,
-        help="Name of the package to zip and upload to the static folder.",
-    )
-    parser.add_argument(
-        "--embed",
-        action="store_true",
-        help="Run the embeddings",
-    )
-
-    return parser.parse_args()
-
-
-def execute_command(args):
-    if args.command == "init":
-        create_directory_structure()
-        return
-    elif args.command == "test":
-        deployment_manager = DeploymentManager(args)
-        deployment_manager.test_locally()
-        return
-    elif args.command == "upload":
-        deployment_manager = DeploymentManager(args)
-        deployment_manager.upload_static()
-        return
-    elif args.command == "add":
-        deployment_manager = DeploymentManager(args)
-        user_response = input(
-            colored("🤔 Do you want to upload the zip to stage? (yes/no): ", "cyan")
-        )
-        if user_response.lower() in ["yes", "y"]:
-            deployment_manager.deploy_package(args.package, upload=True)
-            return
-        deployment_manager.deploy_package(args.package, upload=False)
-        return
-
-    elif args.command == "ai":
-        if args.embed:
-            print("Initializing AI...")
-            SnowBot.ai_embed()
-            return
-
-        component_details = {
-            k: v
-            for k, v in vars(args).items()
-            if k in ["udf", "sproc", "streamlit"] and v
+    @staticmethod
+    def create_directory_structure():
+        dirs_to_create = {
+            "src": ["sproc", "streamlit", "udf"],
+            "static": ["packages"],
         }
 
-        if not component_details:
-            print(
-                colored(
-                    "⚠️ Please specify a type (--udf, --sproc, or --streamlit) along with the ai command.",
-                    "yellow",
-                )
-            )
-            return
+        # Initialize a flag to check if the structure already exists
+        structure_already_exists = True
 
-        component_type, prompt = list(component_details.items())[0]
+        for root_dir, sub_dirs in dirs_to_create.items():
+            if not os.path.exists(root_dir):
+                structure_already_exists = False
+                os.mkdir(root_dir)
+                for sub_dir in sub_dirs:
+                    os.mkdir(os.path.join(root_dir, sub_dir))
 
-        component_name = input(
-            colored(f"🤔 Enter the {component_type.upper()} name: ", "cyan")
-        )
+        files_to_create = [".env", ".gitignore", "pyproject.toml"]
 
-        if SnowBot.component_exists(component_name, component_type):
-            print(
-                colored(
-                    f"⚠️ Component named {component_name} already exists! Choose another name or check your directories.",
-                    "yellow",
-                )
-            )
-            return
+        if not os.path.exists(".env"):
+            structure_already_exists = False
+            with open(".env", "w") as f:
+                f.write("")
 
-        SnowBot.create_new_ai_component(
-            component_name, prompt, template_type=component_type
-        )
-        return
+        if not os.path.exists(".gitignore"):
+            structure_already_exists = False
+            with open(".gitignore", "w") as f:
+                f.write("*.pyc\n__pycache__/\n.env")
 
-    elif args.command == "new":
-        SnowHelper.create_new_component(vars(args))
-        return
+        if not os.path.exists("pyproject.toml"):
+            structure_already_exists = False
+            template_path = SnowHelper.get_template_path("fillers/pyproject.toml")
+            try:
+                with open(template_path, "r") as template_file:
+                    content = template_file.read()
 
-    elif args.command == "deploy":
-        deployment_args = DeploymentArguments(**vars(args))
-        deployment_manager = DeploymentManager(deployment_args)
-        deployment_manager.main()
-        return
+                with open("pyproject.toml", "w") as f:
+                    f.write(content)
+            except FileNotFoundError:
+                print(colored(f"Error: Template {template_path} not found!", "red"))
 
-
-def main():
-    args = parse_args()
-    execute_command(args)
+        if structure_already_exists:
+            print(colored("Project structure is already initialized!", "yellow"))
+        else:
+            print(colored("Project structure initialized!", "green"))

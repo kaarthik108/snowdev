@@ -1,0 +1,64 @@
+name: Bug Report
+description: Report a bug in the project
+labels: [bug]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        
+        Thank you for reporting a bug. Please provide as much information as possible.
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: Are you python 3.10 and above?
+      placeholder: e.g., 3.10.2
+    validations:
+      required: true
+
+  - type: input
+    id: snowpark-version
+    attributes:
+      label: Snowflake Snowpark Python Version
+      description: Are you using snowflake-snowpark-python 1.5.1?
+      placeholder: e.g., 1.5.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Provide a step-by-step description of the bug.
+      placeholder: Describe the steps to reproduce the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: Describe what you expected to happen.
+      placeholder: Describe the expected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: Describe what actually happened.
+      placeholder: Describe the actual behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional information
+      description: Provide any additional information or context.
+      placeholder: Any other details?
+

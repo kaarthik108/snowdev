@@ -1,0 +1,47 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for the project
+labels: [enhancement]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+        
+        Thank you for suggesting a feature. Please provide as much information as possible.
+
+  - type: input
+    id: title
+    attributes:
+      label: Feature Title
+      description: A short title for the feature.
+      placeholder: e.g., New data visualization tool
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: Describe the feature in detail.
+      placeholder: Describe the feature you'd like to see.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: compatibility
+    attributes:
+      label: Compatibility
+      description: Which versions should this feature be compatible with?
+      options:
+        - label: Python 3.10 and above
+          required: true
+        - label: snowflake-snowpark-python 1.5.1
+          required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional information
+      description: Provide any additional information or context.
+      placeholder: Any other details?

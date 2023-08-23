@@ -156,16 +156,14 @@ class SnowHelper:
                 ("py", "streamlit_app.py"),
                 ("yml", "environment.yml"),
             ]:
-                template_name = "fillers/streamlit/fill." + template_ext
-                template_path = os.path.join("snowdev", template_name)
-
-                if os.path.exists(template_path):
-                    with open(template_path, "r") as template_file:
-                        content = template_file.read()
+                try:
+                    template_content = pkg_resources.resource_string(
+                        "snowdev", f"fillers/streamlit/fill.{template_ext}"
+                    ).decode("utf-8")
 
                     with open(os.path.join(new_item_path, output_name), "w") as f:
-                        f.write(content)
-                else:
+                        f.write(template_content)
+                except FileNotFoundError:
                     print(
                         colored(
                             f"No template found for {item_type} with extension {template_ext}. Creating an empty {output_name}...",
@@ -176,15 +174,15 @@ class SnowHelper:
                         pass
         else:
             for ext, template_name in cls.TEMPLATES[item_type].items():
-                template_path = os.path.join("snowdev", template_name)
-                if os.path.exists(template_path):
-                    with open(template_path, "r") as template_file:
-                        content = template_file.read()
+                try:
+                    template_content = pkg_resources.resource_string(
+                        "snowdev", template_name
+                    ).decode("utf-8")
 
                     filename = "app.py" if ext == "py" else "app.toml"
                     with open(os.path.join(new_item_path, filename), "w") as f:
-                        f.write(content)
-                else:
+                        f.write(template_content)
+                except FileNotFoundError:
                     filename = "app.py" if ext == "py" else "app.toml"
                     print(
                         colored(

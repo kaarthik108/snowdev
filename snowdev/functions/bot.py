@@ -19,6 +19,7 @@ from snowdev.functions.utils.snowpark_methods import SnowparkMethods
 
 MODEL = "gpt-4"
 
+
 class SnowBot:
 
     TEMPLATES = {
@@ -135,9 +136,14 @@ class SnowBot:
 
         if matches:
             # Take the first match, as there might be multiple code blocks
-            response_content = matches[0].strip() 
+            response_content = matches[0].strip()
         else:
-            print(colored("Unexpected response content format. Expected code block not found. Please try again", "red"))
+            print(
+                colored(
+                    "Unexpected response content format. Expected code block not found. Please try again",
+                    "red",
+                )
+            )
 
         component_folder = os.path.join("src", template_type, component_name)
         os.makedirs(component_folder, exist_ok=True)
