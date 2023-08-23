@@ -1,6 +1,6 @@
-import os
 from typing import Any, Dict
 
+import pkg_resources
 from langchain.document_loaders import DirectoryLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
@@ -15,7 +15,9 @@ class Secrets(BaseModel):
 class Config(BaseModel):
     chunk_size: int = 1000
     chunk_overlap: int = 0
-    docs_dir: str = "snowdev/functions/utils/knowledge"
+    docs_dir: str = pkg_resources.resource_filename(
+        "snowdev.functions.utils", "knowledge"
+    )
     docs_glob: str = "**/*"
 
 
