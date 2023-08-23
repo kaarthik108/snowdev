@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from snowdev import main as snowdev_main
+from snowdev import deployment as snowdev_main
 
 
 @pytest.fixture

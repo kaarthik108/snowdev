@@ -30,16 +30,16 @@ class SnowHelper:
 
     TEMPLATES = {
         "udf": {
-            "py": get_template_path("fillers/udf/fill.py"),
-            "toml": get_template_path("fillers/udf/fill.toml"),
+            "py": "fillers/udf/fill.py",
+            "toml": "fillers/udf/fill.toml",
         },
         "sproc": {
-            "py": get_template_path("fillers/sproc/fill.py"),
-            "toml": get_template_path("fillers/sproc/fill.toml"),
+            "py": "fillers/sproc/fill.py",
+            "toml": "fillers/sproc/fill.toml",
         },
         "streamlit": {
-            "py": get_template_path("fillers/streamlit/fill.py"),
-            "yml": get_template_path("fillers/streamlit/fill.yml"),
+            "py": "fillers/streamlit/fill.py",
+            "yml": "fillers/streamlit/fill.yml",
         },
     }
 
@@ -149,41 +149,39 @@ class SnowHelper:
             return
 
         os.makedirs(new_item_path, exist_ok=True)
+        creation_successful = True
 
-        # Handling the streamlit templates specifically
         if item_type == "streamlit":
-            for template_ext, output_name in [
-                ("py", "streamlit_app.py"),
-                ("yml", "environment.yml"),
-            ]:
+            for ext, template_name in cls.TEMPLATES[item_type].items():
+                output_name = "streamlit_app.py" if ext == "py" else "environment.yml"
                 try:
                     template_content = pkg_resources.resource_string(
-                        "snowdev", f"fillers/streamlit/fill.{template_ext}"
+                        "snowdev", template_name
                     ).decode("utf-8")
-
                     with open(os.path.join(new_item_path, output_name), "w") as f:
                         f.write(template_content)
                 except FileNotFoundError:
+                    creation_successful = False
                     print(
                         colored(
-                            f"No template found for {item_type} with extension {template_ext}. Creating an empty {output_name}...",
+                            f"No template found for {item_type} with extension {ext}. Creating an empty {output_name}...",
                             "yellow",
                         )
                     )
                     with open(os.path.join(new_item_path, output_name), "w") as f:
                         pass
+
         else:
             for ext, template_name in cls.TEMPLATES[item_type].items():
+                filename = "app.py" if ext == "py" else "app.toml"
                 try:
                     template_content = pkg_resources.resource_string(
                         "snowdev", template_name
                     ).decode("utf-8")
-
-                    filename = "app.py" if ext == "py" else "app.toml"
                     with open(os.path.join(new_item_path, filename), "w") as f:
                         f.write(template_content)
                 except FileNotFoundError:
-                    filename = "app.py" if ext == "py" else "app.toml"
+                    creation_successful = False
                     print(
                         colored(
                             f"No template found for {item_type} with extension {ext}. Creating an empty {filename}...",
@@ -193,6 +191,9 @@ class SnowHelper:
                     with open(os.path.join(new_item_path, filename), "w") as f:
                         pass
 
-        print(
-            colored(f"{item_type} {item_name} has been successfully created!", "green")
-        )
+        if creation_successful:
+            print(
+                colored(
+                    f"{item_type} {item_name} has been successfully created!", "green"
+                )
+            )

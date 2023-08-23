@@ -24,7 +24,8 @@ def init():
 @click.option("--streamlit", type=str, help="The name of the streamlit app.")
 def new(udf, sproc, streamlit):
     """Create a new component."""
-    SnowHelper.create_new_component(udf, sproc, streamlit)
+    args_dict = {"udf": udf, "sproc": sproc, "streamlit": streamlit}
+    SnowHelper.create_new_component(args_dict)
 
 
 @cli.command()
