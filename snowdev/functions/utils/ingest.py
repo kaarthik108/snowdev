@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Dict
 
 import pkg_resources
@@ -18,19 +20,21 @@ class Config(BaseModel):
     docs_dir: str = pkg_resources.resource_filename(
         "snowdev.functions.utils", "knowledge"
     )
-    docs_glob: str = "**/*"
-
 
 class DocumentProcessor:
     def __init__(self, secrets: Secrets, config: Config):
-        self.loader = DirectoryLoader(config.docs_dir, glob=config.docs_glob)
+        self.loader_py = DirectoryLoader(config.docs_dir, glob="**/*.py")
+        self.loader_md = DirectoryLoader(config.docs_dir, glob="**/*.md")
         self.text_splitter = CharacterTextSplitter(
             chunk_size=config.chunk_size, chunk_overlap=config.chunk_overlap
         )
         self.embeddings = OpenAIEmbeddings(openai_api_key=secrets.OPENAI_API_KEY)
 
+
     def process(self) -> Dict[str, Any]:
-        data = self.loader.load()
+        data_py = self.loader_py.load()
+        data_md = self.loader_md.load()
+        data = data_py + data_md
         texts = self.text_splitter.split_documents(data)
         print(f"Found {len(texts)} documents")
         vector_store = Chroma.from_documents(
