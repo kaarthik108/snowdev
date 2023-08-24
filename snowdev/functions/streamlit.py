@@ -73,12 +73,14 @@ class StreamlitAppDeployer:
                 colored(put_result[0].status.upper(), "green"),
             )
 
-    def create_streamlit_app(self, streamlit_name, stage_name, app_name):
+    def create_streamlit_app(self, func_name, stage_name, app_name):
         self.database = self.session.get_current_database().replace('"', "")
+        streamlit_name = func_name.replace("_", " ").capitalize()
+        
         self.session.sql(
             f"""
             CREATE OR REPLACE STREAMLIT "{streamlit_name}" 
-            ROOT_LOCATION = '@{stage_name}/streamlit/'
+            ROOT_LOCATION = '@{stage_name}/streamlit/{func_name}'
             MAIN_FILE = 'streamlit_app.py'
             QUERY_WAREHOUSE = '{self.warehouse}'
         """
@@ -115,7 +117,7 @@ class StreamlitAppDeployer:
                 self.upload_to_stage(file_path, self.stage_name, func_name)
 
         try:
-            self.create_streamlit_app(streamlit_name, self.stage_name, func_name)
+            self.create_streamlit_app(func_name, self.stage_name, func_name)
             print(
                 "\n",
                 colored(
