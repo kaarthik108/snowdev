@@ -20,6 +20,7 @@ class StreamlitAppDeployer:
     def get_connection_details_from_yml(self, directory):
         """
         Parse the environment.yml file and extract the connection details.
+        # Not supported yet
         """
         yml_path = os.path.join(directory, "environment.yml")
 
@@ -76,7 +77,7 @@ class StreamlitAppDeployer:
     def create_streamlit_app(self, func_name, stage_name, app_name):
         self.database = self.session.get_current_database().replace('"', "")
         streamlit_name = func_name.replace("_", " ").capitalize()
-        
+
         self.session.sql(
             f"""
             CREATE OR REPLACE STREAMLIT "{streamlit_name}" 
@@ -93,9 +94,9 @@ class StreamlitAppDeployer:
             print(colored(f"Error: The directory {directory} does not exist.", "red"))
             return
 
-        self.connection_details = self.get_connection_details_from_yml(directory)
+        # self.connection_details = self.get_connection_details_from_yml(directory)
 
-        self.apply_connection_details(directory)
+        # self.apply_connection_details(directory) # Modifying yml is not supported
 
         print(colored("Deploying STREAMLIT APP:", "cyan"))
         print("Directory:", colored(directory, "yellow"))

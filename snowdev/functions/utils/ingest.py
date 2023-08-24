@@ -21,6 +21,7 @@ class Config(BaseModel):
         "snowdev.functions.utils", "knowledge"
     )
 
+
 class DocumentProcessor:
     def __init__(self, secrets: Secrets, config: Config):
         self.loader_py = DirectoryLoader(config.docs_dir, glob="**/*.py")
@@ -29,7 +30,6 @@ class DocumentProcessor:
             chunk_size=config.chunk_size, chunk_overlap=config.chunk_overlap
         )
         self.embeddings = OpenAIEmbeddings(openai_api_key=secrets.OPENAI_API_KEY)
-
 
     def process(self) -> Dict[str, Any]:
         data_py = self.loader_py.load()

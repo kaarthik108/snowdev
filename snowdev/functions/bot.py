@@ -1,5 +1,6 @@
 import os
 import re
+import pkg_resources
 
 import toml
 from langchain.chains import LLMChain, RetrievalQA
@@ -102,6 +103,28 @@ class SnowBot:
             toml.dump(data, f)
 
     @staticmethod
+    def write_environment_file(component_folder, template_type):
+        """
+        This is temporary, until we have a better way to auto create environment files through Langchain output parsers.
+        """
+        file_map = {"streamlit": "fill.yml", "udf": "fill.toml", "sproc": "fill.toml"}
+        source_file_name = file_map.get(template_type)
+
+        if not source_file_name:
+            return
+
+        content = pkg_resources.resource_string(
+            f"snowdev.fillers.{template_type}", source_file_name
+        ).decode("utf-8")
+
+        target_file_name = (
+            "environment.yml" if template_type == "streamlit" else source_file_name
+        )
+
+        with open(os.path.join(component_folder, target_file_name), "w") as env_file:
+            env_file.write(content)
+
+    @staticmethod
     def create_new_ai_component(component_name, prompt, template_type):
         # Ensure that the template_type is valid
         if template_type not in SnowBot.TEMPLATES:
@@ -147,6 +170,7 @@ class SnowBot:
 
         component_folder = os.path.join("src", template_type, component_name)
         os.makedirs(component_folder, exist_ok=True)
+        SnowBot.write_environment_file(component_folder, template_type)
 
         filename = "app.py"
         if template_type == "streamlit":
@@ -154,9 +178,6 @@ class SnowBot:
 
         with open(os.path.join(component_folder, filename), "w") as f:
             f.write(response_content)
-
-        dependencies = {"some-library": "1.0.0", "another-library": "2.0.1"}
-        SnowBot.append_dependencies_to_toml(dependencies)
 
         print(
             colored(

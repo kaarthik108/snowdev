@@ -54,7 +54,7 @@ snowdev <command> [options]
 
 - `--udf <udf_name>`: Name or identifier for the UDF you want to deploy.
 - `--sproc <sproc_name>`: Name or identifier for the Stored Procedure you want to deploy.
-- `--streamlit <streamlit_name>`: Name or identifier for the Streamlit application you want to deploy.
+- `--streamlit <streamlit_name>`: Name or identifier for the Streamlit application you want to deploy. (This is still in PrPr)
 - `--upload <upload_item>`: Specifies what to upload. Currently supported options: `static`.
 - `--package <package_name>`: Specifies the name of the package to zip and upload to the static folder.
 - `--embed`: Used with the `ai` command to run embeddings.

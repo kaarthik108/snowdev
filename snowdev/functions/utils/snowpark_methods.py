@@ -50,5 +50,6 @@ class SnowparkMethods:
 
         cls._write_to_markdown_file(filepath, all_items)
 
+
 if __name__ == "__main__":
     SnowparkMethods.generate_documentation()
