@@ -73,7 +73,7 @@ class SnowBot:
             openai_api_key=os.environ["OPENAI_API_KEY"],
             max_tokens=500,
         )
-        chain = LLMChain(llm=llm, prompt=SnowBot.QA_PROMPT)
+
         chain = RetrievalQA.from_chain_type(
             llm,
             chain_type="stuff",
