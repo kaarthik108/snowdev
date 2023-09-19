@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from enum import Enum
 from typing import Any, Dict, List, NamedTuple
 
 import pkg_resources
@@ -31,13 +32,20 @@ class Config(BaseModel):
     )
 
 
+class PathType(Enum):
+    SPROC = ("src/sproc", "stored procedure")
+    UDF = ("src/udf", "user-defined function")
+    STREAMLIT = ("src/streamlit", "Streamlit app")
+
+    def __init__(self, path: str, desc: str):
+        self.path = path
+        self.desc = desc
+
+
 class DocumentProcessor:
     def __init__(
         self, secrets: Secrets, config: Config, checksum_file: str = "checksums.json"
     ):
-        """
-        Initialize the DocumentProcessor with the provided secrets and configuration.
-        """
         self._initialize_loaders(config.docs_dir)
         self.text_splitter = CharacterTextSplitter(
             chunk_size=config.chunk_size, chunk_overlap=config.chunk_overlap
@@ -47,135 +55,93 @@ class DocumentProcessor:
         self.checksum_dict = self._load_checksums()
 
     def _initialize_loaders(self, docs_dir: str):
-        """
-        Initialize data loaders.
-        """
         self.loader_py = DirectoryLoader(docs_dir, glob="**/*.py")
         self.loader_md = DirectoryLoader(docs_dir, glob="**/*.md")
         self.loader_src_py = DirectoryLoader("src/", glob="**/*.py")
 
     def _load_checksums(self) -> Dict[str, str]:
-        """
-        Load checksums from a checksum file.
-        """
         if os.path.exists(self.checksum_file):
             with open(self.checksum_file, "r") as f:
                 try:
                     return json.load(f)
                 except json.decoder.JSONDecodeError:
-                    print("Checksum file is empty. Creating a new checksum dictionary.")
+                    print(
+                        colored(
+                            "Checksum file is empty. Creating a new checksum dictionary.",
+                            "yellow",
+                        )
+                    )
                     return {}
         else:
             return {}
 
     def _save_checksums(self) -> None:
-        """
-        Save checksums to the checksum file.
-        """
         with open(self.checksum_file, "w") as f:
             json.dump(self.checksum_dict, f)
 
     @staticmethod
     def _create_checksum(content: str) -> str:
-        """
-        Create a checksum for the provided content.
-        """
         return hashlib.sha256(content.encode()).hexdigest()
 
     def _generate_prompt_from_path(self, path: str) -> str:
-        """
-        Generate a prompt based on the file path.
-        """
         folder_name = os.path.basename(os.path.dirname(path))
-        mappings = {
-            "src/sproc": f"This is the stored procedure written in snowflake snowpark named {folder_name}.",
-            "src/udf": f"This is the user-defined function written in snowflake snowpark named {folder_name}.",
-            "src/streamlit": f"This is the Streamlit app written in snowflake snowpark named {folder_name}.",
-        }
-
-        for key, value in mappings.items():
-            if key in path:
-                return value
-
+        for path_type in PathType:
+            if path_type.path in path:
+                return f"This is the {path_type.desc} written in snowflake snowpark named {folder_name}."
         return ""
 
     def process(self) -> Dict[str, Any]:
-        """
-        Process the documents: load, filter, split, embed, and persist.
-        """
         data = self._load_and_filter_documents()
-
         if not data:
-            print(colored("No new documents found to embed.\n", "yellow"))
+            print(colored("No new documents found to embed.", "yellow"))
             return {}
 
         texts = self.text_splitter.split_documents(data)
-
         if not texts:
-            print(colored("No new text segments found to embed.\n", "yellow"))
+            print(colored("No new text segments found to embed.", "yellow"))
             return {}
 
-        print(colored(f"\n Found {len(texts)} documents \n", "cyan"))
-
+        print(colored(f"Found {len(texts)} documents.", "cyan"))
         vector_store = Chroma.from_documents(
             texts, self.embeddings, persist_directory="chroma_db"
         )
         vector_store.persist()
-
         self._save_checksums()
         return vector_store
 
     def _load_and_filter_documents(self) -> List[str]:
-        """
-        Load documents and filter out previously embedded ones.
-        """
-        data_py = self.loader_py.load()
-        data_md = self.loader_md.load()
-        data_src_py = self.loader_src_py.load()
-
-        # Filter out previously embedded files using checksums
         data = []
-        for record in data_py + data_md + data_src_py:
+        for record in (
+            self.loader_py.load() + self.loader_md.load() + self.loader_src_py.load()
+        ):
             content = self._extract_content_from_record(record)
             checksum = self._create_checksum(content)
             filename = self._extract_filename_from_record(record)
 
-            if checksum != self.checksum_dict.get(filename, None):
+            if checksum != self.checksum_dict.get(filename):
                 self.checksum_dict[filename] = checksum
                 prompt = self._generate_prompt_from_path(filename)
                 self._update_record_metadata(record, filename, prompt)
-                if filename.startswith("src/"):
-                    print(
-                        colored(f"Embedding {filename} with Prompt: {prompt}", "green")
-                    )
+                log_msg = (
+                    colored(f"Embedding {filename} with Prompt: {prompt}", "green")
+                    if filename.startswith("src/")
+                    else colored(f"Skipped {filename}", "yellow")
+                )
+                print(log_msg)
                 data.append(record)
-            else:
-                if not filename.startswith("src/"):
-                    print(colored(f"Skipped {filename}", "yellow"))
 
         return data
 
     @staticmethod
     def _extract_content_from_record(record: Any) -> str:
-        """
-        Extract content from a record.
-        """
-        if isinstance(record, str):
-            return record
-        return record.content if hasattr(record, "content") else str(record)
+        return getattr(record, "content", str(record))
 
     @staticmethod
     def _extract_filename_from_record(record: Any) -> str:
-        """
-        Extract filename from a record.
-        """
-        return record.metadata["source"] if hasattr(record, "metadata") else ""
+        return getattr(record, "metadata", {}).get("source", "")
 
     @staticmethod
     def _update_record_metadata(record: Any, filename: str, prompt: str) -> None:
-        """
-        Update metadata for a record.
-        """
         if hasattr(record, "metadata"):
             record.metadata["prompt"] = prompt
         else:
