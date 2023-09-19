@@ -88,11 +88,16 @@ class DocumentProcessor:
         """
         folder_name = os.path.basename(os.path.dirname(path))
         mappings = {
-            "src/sproc/": f"This is the stored procedure written in snowflake snowpark named {folder_name}.",
-            "src/udf/": f"This is the user-defined function written in snowflake snowpark named {folder_name}.",
-            "src/streamlit/": f"This is the Streamlit app written in snowflake snowpark named {folder_name}.",
+            "src/sproc": f"This is the stored procedure written in snowflake snowpark named {folder_name}.",
+            "src/udf": f"This is the user-defined function written in snowflake snowpark named {folder_name}.",
+            "src/streamlit": f"This is the Streamlit app written in snowflake snowpark named {folder_name}.",
         }
-        return mappings.get(path, "")
+
+        for key, value in mappings.items():
+            if key in path:
+                return value
+
+        return ""
 
     def process(self) -> Dict[str, Any]:
         """
@@ -139,7 +144,7 @@ class DocumentProcessor:
                 self.checksum_dict[filename] = checksum
                 prompt = self._generate_prompt_from_path(filename)
                 self._update_record_metadata(record, filename, prompt)
-                if not filename.startswith("src/"):
+                if filename.startswith("src/"):
                     print(
                         colored(f"Embedding {filename} with Prompt: {prompt}", "green")
                     )
