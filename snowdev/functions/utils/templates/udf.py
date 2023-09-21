@@ -17,9 +17,9 @@ if __name__ == "__main__":
     print(handler("test"))
 ##
 
+\n {format_instructions} \n
+
 Question: ```{question}```
 
 Context: ```{context}```
-
-Answer:
 """

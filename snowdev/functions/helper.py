@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 
 import os
 import subprocess
@@ -65,30 +66,43 @@ class SnowHelper:
 
     @classmethod
     def search_package_in_snowflake_channel(cls, package_name):
+        if len(package_name) <= 1:
+            print(f"Invalid package name: {package_name}")
+            return None
         cmd = [
             "conda",
             "search",
             "-c",
             cls.SNOWFLAKE_ANACONDA_URL,
             "--override-channels",
+            "--json",
             package_name,
         ]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, _ = process.communicate()
-
+        
+        try:
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+        except Exception as e:
+            print(f"Failed to execute command {cmd}: {e}")
+            return None
+        
         if process.returncode != 0:
-            return []
-
-        # Parse the results
-        lines = stdout.decode().split("\n")
-        versions = []
-        for line in lines:
-            if package_name in line:
-                versions.append(line.split()[1])  # Extract the version from the result
-
-        # Return all versions
-        return versions
-
+            print(f"Command {cmd} failed with return code {process.returncode}: {stderr.decode()}")
+            return None
+        
+        try:
+            results = json.loads(stdout.decode())
+            if package_name not in results:
+                print(f"Package {package_name} not found")
+                return None
+            versions = [package_info['version'] for package_info in results[package_name]]
+            latest_version = max(versions, key=lambda version: tuple(map(int, version.split('.'))))
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            print(f"Failed to parse package versions for {package_name}. Output: {stdout.decode()}")
+            return None
+        # Return the latest version
+        return latest_version
+    
     @classmethod
     def is_package_available_in_snowflake_channel(cls, package_name):
         versions = cls.search_package_in_snowflake_channel(package_name)

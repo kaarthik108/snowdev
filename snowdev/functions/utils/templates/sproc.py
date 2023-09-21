@@ -19,10 +19,9 @@ if __name__ == "__main__":
 
     print(handler(session,"test"))
 ##
+\n {format_instructions} \n
 
 Question: ```{question}```
 
 Context: ```{context}```
-
-Answer:
 """
