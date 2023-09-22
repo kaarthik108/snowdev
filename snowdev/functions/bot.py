@@ -23,11 +23,14 @@ from snowdev.functions.utils.ingest import DocumentProcessor, Secrets, Config
 from snowdev.functions.utils.snowpark_methods import SnowparkMethods
 import re
 
-MODEL = "gpt-4"
+MODEL = os.environ.get("LLM_MODEL", "gpt-4")
 
 response_schemas = [
     ResponseSchema(name="code", description="The full python code to run"),
-    ResponseSchema(name="packages", description="The packages to install to run the code, ignore snowflake related packages, streamlit and snowdev packages")
+    ResponseSchema(
+        name="packages",
+        description="The packages to install to run the code, ignore snowflake related packages, streamlit and snowdev packages",
+    ),
 ]
 
 
@@ -38,7 +41,7 @@ class SnowBot:
         "sproc": SPROC_TEMPLATE,
         "streamlit": STREAMLIT_TEMPLATE,
     }
-    
+
     @staticmethod
     def ai_embed():
         """
@@ -108,30 +111,34 @@ class SnowBot:
         with open(toml_path, "r") as f:
             data = toml.load(f)
         for package_name, default_version in dependencies_dict.items():
-            print(f"Searching for package: {package_name}")
-            available_versions = SnowHelper.search_package_in_snowflake_channel(package_name)
+            if not package_name.strip():
+                continue
+            print(f"\nSearching for package: {package_name}")
+            available_versions = SnowHelper.search_package_in_snowflake_channel(
+                package_name
+            )
             if available_versions:
                 # Set the found latest version to the TOML data
-                data['tool']['poetry']['dependencies'][package_name] = available_versions
+                data["tool"]["poetry"]["dependencies"][
+                    package_name
+                ] = available_versions
                 print(
                     colored(
                         f"\nPackage {package_name} is available on the Snowflake anaconda channel. Latest version: {available_versions}\n",
                         "green",
                     )
                 )
+            else:
                 print(
                     colored(
-                        "No need to create a package zip. Just include in your `app.toml` declaration.",
-                        "green",
+                        f"⚠️ Package {package_name} is not available on the Snowflake anaconda channel. Using default version: {default_version}",
+                        "yellow",
                     )
                 )
-            else:
-                print(colored(f"⚠️ Package {package_name} is not available on the Snowflake anaconda channel. Using default version: {default_version}", "yellow"))
-                data['tool']['poetry']['dependencies'][package_name] = default_version
+                data["tool"]["poetry"]["dependencies"][package_name] = default_version
 
         with open(toml_path, "w") as f:
             toml.dump(data, f)
-
 
     @staticmethod
     def append_packages_to_environment_file(component_folder, template_type, packages):
@@ -139,39 +146,39 @@ class SnowBot:
             packages = [packages]
         if template_type == "streamlit":
             env_file_path = os.path.join(component_folder, "environment.yml")
-            
+
             if not os.path.exists(env_file_path):
                 raise ValueError(f"The file '{env_file_path}' does not exist.")
-            
+
             with open(env_file_path, "r") as env_file:
                 data = yaml.safe_load(env_file) or {}
-            
+
             # Capture old data
-            old_channels = data.get('channels', [])
-            old_dependencies = data.get('dependencies', [])
-            
+            old_channels = data.get("channels", [])
+            old_dependencies = data.get("dependencies", [])
 
             # Ensure the packages are unique
             for package in packages:
                 if package not in old_dependencies:
                     old_dependencies.append(package)
-            
+
             # Construct new ordered dictionary
             new_data = {
-                'name': os.path.basename(component_folder),
-                'channels': old_channels,
-                'dependencies': old_dependencies
+                "name": os.path.basename(component_folder),
+                "channels": old_channels,
+                "dependencies": old_dependencies,
             }
-            
+
             with open(env_file_path, "w") as env_file:
-                yaml.safe_dump(new_data, env_file, sort_keys=False, default_flow_style=False)
-                        
+                yaml.safe_dump(
+                    new_data, env_file, sort_keys=False, default_flow_style=False
+                )
+
         else:
             # toml_file_path = os.path.join(component_folder, "app.toml")
             dependencies_dict = {package: "*" for package in packages}
             SnowBot.append_dependencies_to_toml(dependencies_dict, component_folder)
 
-                    
     @staticmethod
     def write_environment_file(component_folder, template_type):
         file_map = {"streamlit": "fill.yml", "udf": "fill.toml", "sproc": "fill.toml"}
@@ -246,7 +253,9 @@ class SnowBot:
         component_folder = os.path.join("src", template_type, component_name)
         os.makedirs(component_folder, exist_ok=True)
         SnowBot.write_environment_file(component_folder, template_type)
-        SnowBot.append_packages_to_environment_file(component_folder, template_type, ai_generated_packages)
+        SnowBot.append_packages_to_environment_file(
+            component_folder, template_type, ai_generated_packages
+        )
 
         filename = "app.py"
         if template_type == "streamlit":
@@ -257,7 +266,7 @@ class SnowBot:
 
         print(
             colored(
-                f"✅ {template_type.upper()} {component_name} generated successfully using AI!",
+                f"\n✅ {template_type.upper()} {component_name} generated successfully using AI!\n",
                 "green",
             )
         )
