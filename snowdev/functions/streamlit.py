@@ -11,6 +11,8 @@ class StreamlitAppDeployer:
         self.session = session
         self.stage_name = stage_name
         self.warehouse = self.session.get_current_warehouse().replace('"', "")
+        self.database = self.session.get_current_database().replace('"', "")
+        self.schema = self.session.get_current_schema().replace('"', "")
 
     def create_stage_if_not_exists(self, stage_name):
         self.session.sql(
@@ -74,18 +76,19 @@ class StreamlitAppDeployer:
                 colored(put_result[0].status.upper(), "green"),
             )
 
-    def create_streamlit_app(self, func_name, stage_name, app_name):
-        self.database = self.session.get_current_database().replace('"', "")
-        streamlit_name = func_name.replace("_", " ").capitalize()
+    def create_streamlit_app(self, func_name, stage_name):        
 
+        # Create Streamlit App with properly formatted names
         self.session.sql(
             f"""
-            CREATE OR REPLACE STREAMLIT "{streamlit_name}" 
-            ROOT_LOCATION = '@{stage_name}/streamlit/{func_name}'
+            CREATE OR REPLACE STREAMLIT "{func_name}" 
+            ROOT_LOCATION = '@{self.database}.{self.schema}.{stage_name}/streamlit/{func_name}'
             MAIN_FILE = 'streamlit_app.py'
             QUERY_WAREHOUSE = '{self.warehouse}'
-        """
+            TITLE = '{func_name}'
+            """
         ).collect()
+        
 
     def handler_streamlit(self, filepath):
         directory = os.path.dirname(filepath)
@@ -118,7 +121,7 @@ class StreamlitAppDeployer:
                 self.upload_to_stage(file_path, self.stage_name, func_name)
 
         try:
-            self.create_streamlit_app(func_name, self.stage_name, func_name)
+            self.create_streamlit_app(func_name, self.stage_name)
             print(
                 "\n",
                 colored(

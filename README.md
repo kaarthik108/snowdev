@@ -90,6 +90,7 @@ snowdev <command> [options]
 - [x] AI interactions for embedding and suggestions
 - [x] Support for snowflake Tasks
 - [x] AI to add the packages to toml file
+- [ ] Support for multiple python scripts in stored procedures
 - [ ] Use AI to modify existing code for optimization
 - [ ] Adding more granularity for AI commands
 
