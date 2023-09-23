@@ -106,6 +106,35 @@ Now that you have SnowDev installed and initialized, it's time to see it in acti
     ```
 
 ---
+### Deploying Tasks
+
+1. **Add a New snowflake Task**
+
+    Create a new task application named `sample_task`:
+
+    ```bash
+    snowdev new --task "sample_task"
+    ```
+
+    Modify the sql in the src/task/sample_task/app.sql
+
+2. **Deploy the task Application to Production**
+
+    Ready to go live? Deploy the application to production:
+
+    ```bash
+    snowdev deploy --task "sample_task"
+    ```
+
+3. **Resume the Task**
+
+    Resume the task so it starts the schedule:
+
+    ```bash
+    snowdev task --name "sample_task" --action resume
+    ```
+
+---
 
 ### Deploying using AI
 
