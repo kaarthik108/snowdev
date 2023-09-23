@@ -4,5 +4,3 @@ CREATE OR REPLACE TASK sample_task
   COMMENT = 'This task runs daily at 1am UTC'
 AS
     call test_script(); -- call stored procedure
-
-ALTER TASK sample_task RESUME;

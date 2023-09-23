@@ -185,7 +185,7 @@ class SnowHelper:
             for ext, template_name in cls.TEMPLATES[item_type].items():
                 output_name = "streamlit_app.py" if ext == "py" else "environment.yml"
                 cls._create_file_from_template(
-                    new_item_path, output_name, template_name, item_type, ext
+                    new_item_path, output_name, template_name, item_type, ext, item_name
                 )
 
         # Handle creation for UDF, SPROC, and Task
@@ -195,7 +195,7 @@ class SnowHelper:
                 if item_type == "task" and ext == "sql":
                     filename = "app.sql"
                 cls._create_file_from_template(
-                    new_item_path, filename, template_name, item_type, ext
+                    new_item_path, filename, template_name, item_type, ext, item_name
                 )
 
         if creation_successful:
@@ -207,12 +207,16 @@ class SnowHelper:
 
     @staticmethod
     def _create_file_from_template(
-        new_item_path, filename, template_name, item_type, ext
+        new_item_path, filename, template_name, item_type, ext, item_name=None
     ):
         try:
             template_content = pkg_resources.resource_string(
                 "snowdev", template_name
             ).decode("utf-8")
+            if item_type == "streamlit" and ext == "yml":
+                template_content = template_content.replace("snowflake-test", item_name)
+            elif item_type == "task" and ext == "sql":
+                template_content = template_content.replace("sample_task", item_name)
             with open(os.path.join(new_item_path, filename), "w") as f:
                 f.write(template_content)
         except FileNotFoundError:
