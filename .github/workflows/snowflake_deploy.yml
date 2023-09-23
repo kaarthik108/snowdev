@@ -1,6 +1,5 @@
 name: Deploy to Snowflake
 
-# This workflow is triggered on pushes to the prod branch and when there are changes in the src directory.
 on:
   push:
     branches:
@@ -39,24 +38,30 @@ jobs:
         run: |
           poetry install
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v37
+
       - name: Deploy to Snowflake
         run: |
           cd src
-          for dir in */; do
-          component_type=${dir%/}
-          case $component_type in
-              task)
-              poetry run snowdev deploy --task $dir || continue
-              ;;
-              streamlit)
-              poetry run snowdev deploy --streamlit $dir || continue
-              ;;
-              udf)
-              poetry run snowdev deploy --udf $dir || continue
-              ;;
-              sproc)
-              poetry run snowdev deploy --sproc $dir || continue
-              ;;
-          esac
+          IFS=$'\n'
+          for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
+            dir=$(dirname $file)
+            component_type=$(basename $dir)
+            case $component_type in
+                task)
+                poetry run snowdev deploy --task $dir || continue
+                ;;
+                streamlit)
+                poetry run snowdev deploy --streamlit $dir || continue
+                ;;
+                udf)
+                poetry run snowdev deploy --udf $dir || continue
+                ;;
+                sproc)
+                poetry run snowdev deploy --sproc $dir || continue
+                ;;
+            esac
           done
         continue-on-error: true
