@@ -10,6 +10,16 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+
+    env:
+      ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
+      USER_NAME: ${{ vars.SNOWFLAKE_USER }}
+      PASSWORD: ${{ secrets.SNOWFLAKE_PWD }}
+      ROLE: ${{ vars.SNOWFLAKE_ROLE }}
+      DATABASE: ${{ vars.SNOWFLAKE_DATABASE }}
+      SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
+      WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
 
     steps:
       - name: Checkout code
@@ -18,7 +28,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: "3.10"
 
       # Install snowdev using pip
       - name: Install snowdev
@@ -46,13 +56,5 @@ jobs:
                 ;;
             esac
           done
-        env:
-          ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          USER_NAME: ${{ vars.SNOWFLAKE_USER }}
-          PASSWORD: ${{ secrets.SNOWFLAKE_PWD }}
-          ROLE: ${{ vars.SNOWFLAKE_ROLE }}
-          DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
-          WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
 
         continue-on-error: true
