@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          poetry install --develop snowdev
+          poetry install
 
       - name: Deploy to Snowflake
         run: |
