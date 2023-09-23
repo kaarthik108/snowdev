@@ -14,7 +14,7 @@ def get_snowflake_session() -> Session:
         snow_session = get_active_session()
     return snow_session
 
-
+ 
 session = get_snowflake_session()
 
 st.set_page_config(
