@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "snowdev_user"
-version = "0.1.0"
+version = "0.2.0"
 description = "snow Developers User"
 authors = ["Your Name <your.email@example.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.11.0"
-"snowflake-snowpark-python" = { version = "1.5.1", extras = ["pandas"] }
+snowdev = "^0.2.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
