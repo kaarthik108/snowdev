@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from typing import Optional
 
@@ -282,6 +283,7 @@ class DeploymentManager:
         dirs_to_create = {
             "src": ["sproc", "streamlit", "udf", "task"],
             "static": ["packages"],
+            ".github": ["workflows"],
         }
 
         # Initialize a flag to check if the structure already exists
@@ -318,6 +320,13 @@ class DeploymentManager:
             except FileNotFoundError:
                 print(colored(f"Error: Template {template_path} not found!", "red"))
 
+        actions_file_src = SnowHelper.get_template_path("fillers/actions.yml")
+        actions_file_dst = os.path.join(".github", "workflows", "actions.yml")
+        
+        if not os.path.exists(actions_file_dst):
+            structure_already_exists = False
+            shutil.copy(actions_file_src, actions_file_dst)
+            
         if structure_already_exists:
             print(colored("Project structure is already initialized!", "yellow"))
         else:
