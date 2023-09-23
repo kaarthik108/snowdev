@@ -31,15 +31,13 @@ jobs:
         with:
           python-version: "3.10"
 
-      # Install Poetry
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
 
-        # Install project dependencies using Poetry
       - name: Install dependencies
         run: |
-          poetry install
+          poetry install --develop snowdev
 
       - name: Deploy to Snowflake
         run: |
@@ -48,16 +46,16 @@ jobs:
           component_type=${dir%/}
           case $component_type in
               task)
-              snowdev deploy --task $dir || continue
+              poetry run snowdev deploy --task $dir || continue
               ;;
               streamlit)
-              snowdev deploy --streamlit $dir || continue
+              poetry run snowdev deploy --streamlit $dir || continue
               ;;
               udf)
-              snowdev deploy --udf $dir || continue
+              poetry run snowdev deploy --udf $dir || continue
               ;;
               sproc)
-              snowdev deploy --sproc $dir || continue
+              poetry run snowdev deploy --sproc $dir || continue
               ;;
           esac
           done
