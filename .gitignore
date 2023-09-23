@@ -161,3 +161,6 @@ chroma_db/
 
 # checksums for chromadb
 checksums.json
+
+# compiled task scripts
+compiled/
