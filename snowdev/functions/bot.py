@@ -19,18 +19,23 @@ from snowdev.functions.utils.templates.streamlit import (
     TEMPLATE as STREAMLIT_TEMPLATE,
 )
 from snowdev.functions.utils.templates.udf import TEMPLATE as UDF_TEMPLATE
+from snowdev.functions.utils.templates.task import TEMPLATE as TASK_TEMPLATE
 from snowdev.functions.utils.ingest import DocumentProcessor, Secrets, Config
 from snowdev.functions.utils.snowpark_methods import SnowparkMethods
 import re
 
 MODEL = os.environ.get("LLM_MODEL", "gpt-4")
 
-response_schemas = [
+python_schemas = [
     ResponseSchema(name="code", description="The full python code to run"),
     ResponseSchema(
         name="packages",
         description="The packages to install to run the code, ignore snowflake related packages, streamlit and snowdev packages",
     ),
+]
+
+task_schemas = [
+    ResponseSchema(name="code", description="The sql code to run snowflake task"),
 ]
 
 
@@ -40,6 +45,7 @@ class SnowBot:
         "udf": UDF_TEMPLATE,
         "sproc": SPROC_TEMPLATE,
         "streamlit": STREAMLIT_TEMPLATE,
+        "task": TASK_TEMPLATE,
     }
 
     @staticmethod
@@ -63,7 +69,9 @@ class SnowBot:
 
     @staticmethod
     def get_qa_prompt_for_type(template_type):
-        output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
+        output_parser = StructuredOutputParser.from_response_schemas(
+            python_schemas if template_type != "task" else task_schemas
+        )
         format_instructions = output_parser.get_format_instructions()
         if template_type not in SnowBot.TEMPLATES:
             raise ValueError(f"No template found for component type: {template_type}")
@@ -210,6 +218,9 @@ class SnowBot:
             return
 
         SnowBot.QA_PROMPT = SnowBot.get_qa_prompt_for_type(template_type)
+
+        if template_type == "task":
+            prompt = f"{prompt}\nTask Name: {component_name}"
         # format_instructions = output_parser.get_format_instructions()
         # Check if the component already exists
         if SnowBot.component_exists(component_name, template_type):
@@ -252,17 +263,27 @@ class SnowBot:
 
         component_folder = os.path.join("src", template_type, component_name)
         os.makedirs(component_folder, exist_ok=True)
-        SnowBot.write_environment_file(component_folder, template_type)
-        SnowBot.append_packages_to_environment_file(
-            component_folder, template_type, ai_generated_packages
-        )
 
-        filename = "app.py"
+        filename = "app.sql" if template_type == "task" else "app.py"
         if template_type == "streamlit":
             filename = "streamlit_app.py"
 
         with open(os.path.join(component_folder, filename), "w") as f:
             f.write(response_content)
+
+        if template_type == "task":
+            print(
+                colored(
+                    f"\n✅ TASK {component_name} SQL code generated successfully using AI!\n",
+                    "green",
+                )
+            )
+            return
+
+        SnowBot.write_environment_file(component_folder, template_type)
+        SnowBot.append_packages_to_environment_file(
+            component_folder, template_type, ai_generated_packages
+        )
 
         print(
             colored(
