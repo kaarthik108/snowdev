@@ -16,7 +16,6 @@ def get_snowflake_session() -> Session:
 
 
 session = get_snowflake_session()
-laybuy_colour_palette = ["#751DFF", "#E1CFFF"]
 
 st.set_page_config(
     layout="wide",
