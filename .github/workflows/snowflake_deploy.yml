@@ -57,31 +57,33 @@ jobs:
 
       - name: Deploy to Snowflake
         run: |
+          cd src
           IFS=$'\n'
-          for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
-              # Skip if path is not under src
-              if [[ $file != src/* ]]; then
-                continue
-              fi
-              # Extract the path relative to src
-              rel_path="${file#src/}"
-              component_type=$(echo $rel_path | cut -d'/' -f1)
-              component_name=$(echo $rel_path | cut -d'/' -f2)
-              echo "Component Type: $component_type"
-              echo "Component Name: $component_name"
-              case $component_type in
-                  task)
-                  poetry run snowdev deploy --task $component_name || continue
-                  ;;
-                  streamlit)
-                  poetry run snowdev deploy --streamlit $component_name || continue
-                  ;;
-                  udf)
-                  poetry run snowdev deploy --udf $component_name || continue
-                  ;;
-                  sproc)
-                  poetry run snowdev deploy --sproc $component_name || continue
-                  ;;
-              esac
+          # Initialize a variable to track if any deployment fails
+          error_occurred=false
+          for dir in $(find src -mindepth 2 -type d); do
+          # Extract the path relative to src
+          rel_path="${dir#src/}"
+          component_type=$(echo $rel_path | cut -d'/' -f1)
+          component_name=$(echo $rel_path | cut -d'/' -f2)
+          echo "Component Type: $component_type"
+          echo "Component Name: $component_name"
+          case $component_type in
+              task)
+              poetry run snowdev deploy --task $component_name || error_occurred=true
+              ;;
+              streamlit)
+              poetry run snowdev deploy --streamlit $component_name || error_occurred=true
+              ;;
+              udf)
+              poetry run snowdev deploy --udf $component_name || error_occurred=true
+              ;;
+              sproc)
+              poetry run snowdev deploy --sproc $component_name || error_occurred=true
+              ;;
+          esac
           done
-        continue-on-error: true
+          # If any deployment failed, exit the script with a non-zero status
+          if [ "$error_occurred" = true ]; then
+          exit 1
+          fi
