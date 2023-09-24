@@ -30,6 +30,15 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
@@ -47,21 +56,26 @@ jobs:
           cd src
           IFS=$'\n'
           for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
-            dir=$(dirname $file)
-            component_type=$(basename $dir)
-            case $component_type in
-                task)
-                poetry run snowdev deploy --task $dir || continue
-                ;;
-                streamlit)
-                poetry run snowdev deploy --streamlit $dir || continue
-                ;;
-                udf)
-                poetry run snowdev deploy --udf $dir || continue
-                ;;
-                sproc)
-                poetry run snowdev deploy --sproc $dir || continue
-                ;;
-            esac
+              # Extract the path relative to src
+              rel_path="${file#src/}"
+              component_type=$(echo $rel_path | cut -d'/' -f1)
+              component_name=$(echo $rel_path | cut -d'/' -f2)
+              echo "Component Type: $component_type"
+              echo "Component Name: $component_name"
+              case $component_type in
+                  task)
+                  poetry run snowdev deploy --task $component_name || continue
+                  ;;
+                  streamlit)
+                  poetry run snowdev deploy --streamlit $component_name || continue
+                  ;;
+                  udf)
+                  poetry run snowdev deploy --udf $component_name || continue
+                  ;;
+                  sproc)
+                  poetry run snowdev deploy --sproc $component_name || continue
+                  ;;
+              esac
           done
+
         continue-on-error: true
