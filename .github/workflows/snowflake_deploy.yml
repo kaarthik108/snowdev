@@ -59,6 +59,10 @@ jobs:
         run: |
           IFS=$'\n'
           for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
+              # Skip if path is not under src
+              if [[ $file != src/* ]]; then
+                continue
+              fi
               # Extract the path relative to src
               rel_path="${file#src/}"
               component_type=$(echo $rel_path | cut -d'/' -f1)
@@ -67,16 +71,16 @@ jobs:
               echo "Component Name: $component_name"
               case $component_type in
                   task)
-                  poetry run dist/snowdev deploy --task $component_name || continue
+                  poetry run snowdev deploy --task $component_name || continue
                   ;;
                   streamlit)
-                  poetry run dist/snowdev deploy --streamlit $component_name || continue
+                  poetry run snowdev deploy --streamlit $component_name || continue
                   ;;
                   udf)
-                  poetry run dist/snowdev deploy --udf $component_name || continue
+                  poetry run snowdev deploy --udf $component_name || continue
                   ;;
                   sproc)
-                  poetry run dist/snowdev deploy --sproc $component_name || continue
+                  poetry run snowdev deploy --sproc $component_name || continue
                   ;;
               esac
           done
