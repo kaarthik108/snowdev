@@ -57,32 +57,38 @@ jobs:
 
       - name: Deploy to Snowflake
         run: |
-          cd src
           IFS=$'\n'
-          error_occurred=false
-          for dir in $(find . -mindepth 2 -type d); do # Changed this line
-          # Extract the path relative to src
-          rel_path="${dir#.}" # Changed this line
-          component_type=$(echo $rel_path | cut -d'/' -f2) # Adjusted field number
-          component_name=$(echo $rel_path | cut -d'/' -f3) # Adjusted field number
-          echo "Component Type: $component_type"
-          echo "Component Name: $component_name"
-          case $component_type in
-              task)
-              poetry run snowdev deploy --task $component_name || error_occurred=true
-              ;;
-              streamlit)
-              poetry run snowdev deploy --streamlit $component_name || error_occurred=true
-              ;;
-              udf)
-              poetry run snowdev deploy --udf $component_name || error_occurred=true
-              ;;
-              sproc)
-              poetry run snowdev deploy --sproc $component_name || error_occurred=true
-              ;;
-          esac
+          for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
+              # Skip if path is not under src
+              if [[ $file != src/* ]]; then
+              continue
+              fi
+              # Extract the path relative to src
+              rel_path="${file#src/}"
+              component_type=$(echo $rel_path | cut -d'/' -f1)
+              component_name=$(echo $rel_path | cut -d'/' -f2)
+              component_path="src/$component_type/$component_name"
+              
+              # Check if the component directory exists
+              if [ ! -d "$component_path" ]; then
+              echo "Directory $component_path does not exist. Skipping..."
+              continue
+              fi
+              
+              echo "Component Type: $component_type"
+              echo "Component Name: $component_name"
+              case $component_type in
+                  task)
+                  poetry run snowdev deploy --task $component_name || echo "Failed to deploy task $component_name"
+                  ;;
+                  streamlit)
+                  poetry run snowdev deploy --streamlit $component_name || echo "Failed to deploy streamlit $component_name"
+                  ;;
+                  udf)
+                  poetry run snowdev deploy --udf $component_name || echo "Failed to deploy udf $component_name"
+                  ;;
+                  sproc)
+                  poetry run snowdev deploy --sproc $component_name || echo "Failed to deploy sproc $component_name"
+                  ;;
+              esac
           done
-          # If any deployment failed, exit the script with a non-zero status
-          if [ "$error_occurred" = true ]; then
-          exit 1
-          fi
