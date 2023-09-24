@@ -155,4 +155,12 @@ install-snowpark-ml-1.0.2.sh
 !examples/src/
 !examples/static/
 
+.vscode/
+
 chroma_db/
+
+# checksums for chromadb
+checksums.json
+
+# compiled task scripts
+compiled/

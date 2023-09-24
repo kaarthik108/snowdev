@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 
 import os
 import subprocess
@@ -13,6 +14,7 @@ class SnowHelperConfig(BaseModel):
     udf: str = None
     sproc: str = None
     streamlit: str = None
+    task: str = None
 
 
 class SnowHelper:
@@ -22,6 +24,7 @@ class SnowHelper:
         "udf": "src/udf",
         "sproc": "src/sproc",
         "streamlit": "src/streamlit",
+        "task": "src/task",
     }
 
     @staticmethod
@@ -40,6 +43,9 @@ class SnowHelper:
         "streamlit": {
             "py": "fillers/streamlit/fill.py",
             "yml": "fillers/streamlit/fill.yml",
+        },
+        "task": {
+            "sql": "fillers/task/fill.sql",
         },
     }
 
@@ -65,29 +71,52 @@ class SnowHelper:
 
     @classmethod
     def search_package_in_snowflake_channel(cls, package_name):
+        if len(package_name) <= 1:
+            print(f"Invalid package name: {package_name}")
+            return None
         cmd = [
             "conda",
             "search",
             "-c",
             cls.SNOWFLAKE_ANACONDA_URL,
             "--override-channels",
+            "--json",
             package_name,
         ]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, _ = process.communicate()
+
+        try:
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            stdout, stderr = process.communicate()
+        except Exception as e:
+            print(f"Failed to execute command {cmd}: {e}")
+            return None
 
         if process.returncode != 0:
-            return []
+            print(
+                f"Command {cmd} failed with return code {process.returncode}: {stderr.decode()}"
+            )
+            return None
 
-        # Parse the results
-        lines = stdout.decode().split("\n")
-        versions = []
-        for line in lines:
-            if package_name in line:
-                versions.append(line.split()[1])  # Extract the version from the result
-
-        # Return all versions
-        return versions
+        try:
+            results = json.loads(stdout.decode())
+            if package_name not in results:
+                print(f"Package {package_name} not found")
+                return None
+            versions = [
+                package_info["version"] for package_info in results[package_name]
+            ]
+            latest_version = max(
+                versions, key=lambda version: tuple(map(int, version.split(".")))
+            )
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            print(
+                f"Failed to parse package versions for {package_name}. Output: {stdout.decode()}"
+            )
+            return None
+        # Return the latest version
+        return latest_version
 
     @classmethod
     def is_package_available_in_snowflake_channel(cls, package_name):
@@ -131,7 +160,7 @@ class SnowHelper:
         if not item_type:
             print(
                 colored(
-                    "Error: Please provide either --udf, --sproc, or --streamlit when using the 'new' command.",
+                    "Error: Please provide either --udf, --sproc, --streamlit, or --task when using the 'new' command.",
                     "red",
                 )
             )
@@ -151,45 +180,23 @@ class SnowHelper:
         os.makedirs(new_item_path, exist_ok=True)
         creation_successful = True
 
+        # Handle creation for Streamlit
         if item_type == "streamlit":
             for ext, template_name in cls.TEMPLATES[item_type].items():
                 output_name = "streamlit_app.py" if ext == "py" else "environment.yml"
-                try:
-                    template_content = pkg_resources.resource_string(
-                        "snowdev", template_name
-                    ).decode("utf-8")
-                    with open(os.path.join(new_item_path, output_name), "w") as f:
-                        f.write(template_content)
-                except FileNotFoundError:
-                    creation_successful = False
-                    print(
-                        colored(
-                            f"No template found for {item_type} with extension {ext}. Creating an empty {output_name}...",
-                            "yellow",
-                        )
-                    )
-                    with open(os.path.join(new_item_path, output_name), "w") as f:
-                        pass
+                cls._create_file_from_template(
+                    new_item_path, output_name, template_name, item_type, ext, item_name
+                )
 
+        # Handle creation for UDF, SPROC, and Task
         else:
             for ext, template_name in cls.TEMPLATES[item_type].items():
                 filename = "app.py" if ext == "py" else "app.toml"
-                try:
-                    template_content = pkg_resources.resource_string(
-                        "snowdev", template_name
-                    ).decode("utf-8")
-                    with open(os.path.join(new_item_path, filename), "w") as f:
-                        f.write(template_content)
-                except FileNotFoundError:
-                    creation_successful = False
-                    print(
-                        colored(
-                            f"No template found for {item_type} with extension {ext}. Creating an empty {filename}...",
-                            "yellow",
-                        )
-                    )
-                    with open(os.path.join(new_item_path, filename), "w") as f:
-                        pass
+                if item_type == "task" and ext == "sql":
+                    filename = "app.sql"
+                cls._create_file_from_template(
+                    new_item_path, filename, template_name, item_type, ext, item_name
+                )
 
         if creation_successful:
             print(
@@ -197,3 +204,27 @@ class SnowHelper:
                     f"{item_type} {item_name} has been successfully created!", "green"
                 )
             )
+
+    @staticmethod
+    def _create_file_from_template(
+        new_item_path, filename, template_name, item_type, ext, item_name=None
+    ):
+        try:
+            template_content = pkg_resources.resource_string(
+                "snowdev", template_name
+            ).decode("utf-8")
+            if item_type == "streamlit" and ext == "yml":
+                template_content = template_content.replace("snowflake-test", item_name)
+            elif item_type == "task" and ext == "sql":
+                template_content = template_content.replace("sample_task", item_name)
+            with open(os.path.join(new_item_path, filename), "w") as f:
+                f.write(template_content)
+        except FileNotFoundError:
+            print(
+                colored(
+                    f"No template found for {item_type} with extension {ext}. Creating an empty {filename}...",
+                    "yellow",
+                )
+            )
+            with open(os.path.join(new_item_path, filename), "w") as f:
+                pass

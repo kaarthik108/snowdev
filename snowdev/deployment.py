@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from typing import Optional
 
@@ -12,6 +13,7 @@ from snowdev import (
     SnowHelper,
     SnowPackageZip,
     StreamlitAppDeployer,
+    TaskDeployer,
 )
 
 
@@ -22,8 +24,9 @@ class DeploymentArguments(BaseModel):
     test: bool = False
     upload: Optional[str]
     package: Optional[str]
+    task: Optional[str]
 
-    @validator("udf", "sproc", "streamlit", pre=True, always=True)
+    @validator("udf", "sproc", "streamlit", "task", pre=True, always=True)
     def path_exists(cls, value, values, field, **kwargs):
         if value:
             path = ""
@@ -33,6 +36,8 @@ class DeploymentArguments(BaseModel):
                 path = os.path.join(DeploymentManager.SPROC_PATH, value)
             elif "streamlit" in field.name:
                 path = os.path.join(DeploymentManager.STREAMLIT_PATH, value)
+            elif "task" in field.name:
+                path = os.path.join(DeploymentManager.TASK_PATH, value)
 
             if not os.path.exists(path):
                 error_message = colored(
@@ -47,6 +52,7 @@ class DeploymentManager:
     UDF_PATH = "src/udf/"
     SPROC_PATH = "src/sproc/"
     STREAMLIT_PATH = "src/streamlit/"
+    TASK_PATH = "src/task/"
 
     def __init__(self, args=None):
         self.args = args
@@ -265,8 +271,9 @@ class DeploymentManager:
                         file_path, remote_path, overwrite=True, auto_compress=False
                     )
 
-    def deploy_task(self, taskname):
-        pass
+    def deploy_task(self, taskname, option=None):
+        deployer = TaskDeployer(self.session, self.stage_name)
+        deployer.deploy_task(taskname, option=option)
 
     def deploy_pipe(self, pipe_name):
         pass
@@ -274,8 +281,9 @@ class DeploymentManager:
     @staticmethod
     def create_directory_structure():
         dirs_to_create = {
-            "src": ["sproc", "streamlit", "udf"],
+            "src": ["sproc", "streamlit", "udf", "task"],
             "static": ["packages"],
+            ".github": ["workflows"],
         }
 
         # Initialize a flag to check if the structure already exists
@@ -298,7 +306,7 @@ class DeploymentManager:
         if not os.path.exists(".gitignore"):
             structure_already_exists = False
             with open(".gitignore", "w") as f:
-                f.write("*.pyc\n__pycache__/\n.env")
+                f.write("*.pyc\n__pycache__/\n.env\ncompiled/")
 
         if not os.path.exists("pyproject.toml"):
             structure_already_exists = False
@@ -312,6 +320,13 @@ class DeploymentManager:
             except FileNotFoundError:
                 print(colored(f"Error: Template {template_path} not found!", "red"))
 
+        actions_file_src = SnowHelper.get_template_path("fillers/actions.yml")
+        actions_file_dst = os.path.join(".github", "workflows", "actions.yml")
+        
+        if not os.path.exists(actions_file_dst):
+            structure_already_exists = False
+            shutil.copy(actions_file_src, actions_file_dst)
+            
         if structure_already_exists:
             print(colored("Project structure is already initialized!", "yellow"))
         else:

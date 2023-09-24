@@ -4,6 +4,16 @@
 
 SnowDev is a command-line utility designed for deploying various components related to Snowflake such as UDFs, stored procedures, and Streamlit applications using **Snowpark**. This tool streamlines tasks like initializing directories, local testing, uploading, and auto create components code using AI.
 
+## Features
+
+SnowDev currently supports the following components:
+
+- **UDF (User-Defined Function)**
+- **Stored Procedure**
+- **Streamlit**
+- **Tasks**
+
+
 ## Setup
 
 ```bash
@@ -55,6 +65,7 @@ snowdev <command> [options]
 - `--udf <udf_name>`: Name or identifier for the UDF you want to deploy.
 - `--sproc <sproc_name>`: Name or identifier for the Stored Procedure you want to deploy.
 - `--streamlit <streamlit_name>`: Name or identifier for the Streamlit application you want to deploy. (This is still in PrPr)
+- `--task <task_name>`: Name of the snowflake task you want to deploy.
 - `--upload <upload_item>`: Specifies what to upload. Currently supported options: `static`.
 - `--package <package_name>`: Specifies the name of the package to zip and upload to the static folder.
 - `--embed`: Used with the `ai` command to run embeddings.
@@ -77,10 +88,11 @@ snowdev <command> [options]
 - [x] Support for UDFs and Stored Procedures
 - [x] Support for Streamlit
 - [x] AI interactions for embedding and suggestions
+- [x] Support for snowflake Tasks
+- [x] AI to add the packages to toml file
+- [ ] Support for multiple python scripts in stored procedures
 - [ ] Use AI to modify existing code for optimization
-- [ ] AI to add the packages to toml file
 - [ ] Adding more granularity for AI commands
-- [ ] Support for snowflake Tasks
 
 
 

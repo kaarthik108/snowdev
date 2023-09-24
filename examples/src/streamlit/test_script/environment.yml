@@ -1,9 +1,5 @@
 name: snowflake-test
 channels:
   - snowflake
-snowflake:
-  database: 
-  schema: 
-  role:
 dependencies:
   - pyyaml
