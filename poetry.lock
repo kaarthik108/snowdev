@@ -2516,13 +2516,13 @@ torch = ["torchdata (>=0.4,<1)"]
 
 [[package]]
 name = "snowflake-snowpark-python"
-version = "1.8.0"
+version = "1.6.1"
 description = "Snowflake Snowpark for Python"
 optional = false
 python-versions = ">=3.8, <3.11"
 files = [
-    {file = "snowflake-snowpark-python-1.8.0.tar.gz", hash = "sha256:62d3d353fb48149a3cb256331078257cf51e122f8c8b5f38a686a364f845c467"},
-    {file = "snowflake_snowpark_python-1.8.0-py3-none-any.whl", hash = "sha256:78fde4313fa8a713586d3af14d3ca4437f899627c7c36b9e5e81999e8acf9ce2"},
+    {file = "snowflake-snowpark-python-1.6.1.tar.gz", hash = "sha256:a34b133ad9530ca02ab5ee449761250cb24e195bd8ff13894c1650c53d10ca87"},
+    {file = "snowflake_snowpark_python-1.6.1-py3-none-any.whl", hash = "sha256:1e1ba7ae56469b7381a49bceda28a727c4835cd45163840f7afc93febe9525b8"},
 ]
 
 [package.dependencies]
@@ -2530,15 +2530,15 @@ cloudpickle = ">=1.6.0,<=2.0.0"
 pyyaml = "*"
 setuptools = ">=40.6.0"
 snowflake-connector-python = [
-    {version = ">=3.2.0,<4.0.0"},
-    {version = ">=3.2.0,<4.0.0", extras = ["pandas"], optional = true, markers = "extra == \"pandas\""},
+    {version = ">=3.0.4,<4.0.0"},
+    {version = ">=3.0.4,<4.0.0", extras = ["pandas"], optional = true, markers = "extra == \"pandas\""},
 ]
 wheel = "*"
 
 [package.extras]
-development = ["cachetools", "coverage", "pytest", "pytest-cov", "pytest-timeout", "sphinx (==5.0.2)"]
-pandas = ["snowflake-connector-python[pandas] (>=3.2.0,<4.0.0)"]
-secure-local-storage = ["snowflake-connector-python[secure-local-storage] (>=3.2.0,<4.0.0)"]
+development = ["cachetools", "coverage", "pytest", "pytest-cov", "sphinx (==5.0.2)"]
+pandas = ["snowflake-connector-python[pandas] (>=3.0.4,<4.0.0)"]
+secure-local-storage = ["snowflake-connector-python[secure-local-storage] (>=3.0.4,<4.0.0)"]
 
 [[package]]
 name = "sortedcontainers"
@@ -3372,4 +3372,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10.0,<3.11.0"
-content-hash = "8715e094b9c4dc98dccc3dcff576bb099baff793a18a676fa6784e895b83f94e"
+content-hash = "612eb85dd5e05fb3faa05e85b21ee30f560790b7cb2c945e0a32fd48395920e1"

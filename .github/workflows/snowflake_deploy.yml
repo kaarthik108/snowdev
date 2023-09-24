@@ -1,6 +1,5 @@
 name: Deploy to Snowflake
 
-# This workflow is triggered on pushes to the prod branch and when there are changes in the src directory.
 on:
   push:
     branches:
@@ -11,6 +10,16 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+
+    env:
+      ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
+      USER_NAME: ${{ vars.SNOWFLAKE_USER }}
+      PASSWORD: ${{ secrets.SNOWFLAKE_PWD }}
+      ROLE: ${{ vars.SNOWFLAKE_ROLE }}
+      DATABASE: ${{ vars.SNOWFLAKE_DATABASE }}
+      SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
+      WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
 
     steps:
       - name: Checkout code
@@ -19,45 +28,67 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: "3.10"
 
-      # Install Poetry
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
 
-        # Install project dependencies using Poetry
       - name: Install dependencies
         run: |
           poetry install
 
+      - name: Build
+        run: |
+          poetry build
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v37
+
       - name: Deploy to Snowflake
         run: |
-          cd src
-          for dir in */; do
-          component_type=${dir%/}
-          case $component_type in
-              task)
-              snowdev deploy --task $dir || continue
-              ;;
-              streamlit)
-              snowdev deploy --streamlit $dir || continue
-              ;;
-              udf)
-              snowdev deploy --udf $dir || continue
-              ;;
-              sproc)
-              snowdev deploy --sproc $dir || continue
-              ;;
-          esac
+          IFS=$'\n'
+          for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
+              # Skip if path is not under src
+              if [[ $file != src/* ]]; then
+              continue
+              fi
+              # Extract the path relative to src
+              rel_path="${file#src/}"
+              component_type=$(echo $rel_path | cut -d'/' -f1)
+              component_name=$(echo $rel_path | cut -d'/' -f2)
+              component_path="src/$component_type/$component_name"
+              
+              # Check if the component directory exists
+              if [ ! -d "$component_path" ]; then
+              echo "Directory $component_path does not exist. Skipping..."
+              continue
+              fi
+              
+              echo "Component Type: $component_type"
+              echo "Component Name: $component_name"
+              case $component_type in
+                  task)
+                  poetry run snowdev deploy --task $component_name || echo "Failed to deploy task $component_name"
+                  ;;
+                  streamlit)
+                  poetry run snowdev deploy --streamlit $component_name || echo "Failed to deploy streamlit $component_name"
+                  ;;
+                  udf)
+                  poetry run snowdev deploy --udf $component_name || echo "Failed to deploy udf $component_name"
+                  ;;
+                  sproc)
+                  poetry run snowdev deploy --sproc $component_name || echo "Failed to deploy sproc $component_name"
+                  ;;
+              esac
           done
-        env:
-          ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          USER_NAME: ${{ vars.SNOWFLAKE_USER }}
-          PASSWORD: ${{ secrets.SNOWFLAKE_PWD }}
-          ROLE: ${{ vars.SNOWFLAKE_ROLE }}
-          DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
-          WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
-
-        continue-on-error: true
