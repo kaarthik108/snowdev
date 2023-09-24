@@ -47,13 +47,16 @@ jobs:
         run: |
           poetry install
 
+      - name: Build
+        run: |
+          poetry build
+
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v37
 
       - name: Deploy to Snowflake
         run: |
-          cd src
           IFS=$'\n'
           for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
               # Extract the path relative to src
@@ -64,18 +67,17 @@ jobs:
               echo "Component Name: $component_name"
               case $component_type in
                   task)
-                  poetry run snowdev deploy --task $component_name || continue
+                  poetry run dist/snowdev deploy --task $component_name || continue
                   ;;
                   streamlit)
-                  poetry run snowdev deploy --streamlit $component_name || continue
+                  poetry run dist/snowdev deploy --streamlit $component_name || continue
                   ;;
                   udf)
-                  poetry run snowdev deploy --udf $component_name || continue
+                  poetry run dist/snowdev deploy --udf $component_name || continue
                   ;;
                   sproc)
-                  poetry run snowdev deploy --sproc $component_name || continue
+                  poetry run dist/snowdev deploy --sproc $component_name || continue
                   ;;
               esac
           done
-
         continue-on-error: true
