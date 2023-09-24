@@ -9,14 +9,10 @@ on:
     paths:
       - "pyproject.toml"
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "pyproject.toml"
 
 jobs:
   release:
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/_release.yml
     with:
       working-directory: snowdev

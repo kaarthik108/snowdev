@@ -322,11 +322,11 @@ class DeploymentManager:
 
         actions_file_src = SnowHelper.get_template_path("fillers/actions.yml")
         actions_file_dst = os.path.join(".github", "workflows", "actions.yml")
-        
+
         if not os.path.exists(actions_file_dst):
             structure_already_exists = False
             shutil.copy(actions_file_src, actions_file_dst)
-            
+
         if structure_already_exists:
             print(colored("Project structure is already initialized!", "yellow"))
         else:

@@ -76,7 +76,7 @@ class StreamlitAppDeployer:
                 colored(put_result[0].status.upper(), "green"),
             )
 
-    def create_streamlit_app(self, func_name, stage_name):        
+    def create_streamlit_app(self, func_name, stage_name):
 
         # Create Streamlit App with properly formatted names
         self.session.sql(
@@ -88,7 +88,6 @@ class StreamlitAppDeployer:
             TITLE = '{func_name}'
             """
         ).collect()
-        
 
     def handler_streamlit(self, filepath):
         directory = os.path.dirname(filepath)

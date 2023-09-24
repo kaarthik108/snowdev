@@ -1,5 +1,5 @@
-name: snowflake-test
+name: snowflake_insights
 channels:
   - snowflake
 dependencies:
-  - pyyaml
+  - altair
