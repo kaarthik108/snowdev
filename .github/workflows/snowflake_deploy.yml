@@ -59,13 +59,12 @@ jobs:
         run: |
           cd src
           IFS=$'\n'
-          # Initialize a variable to track if any deployment fails
           error_occurred=false
-          for dir in $(find src -mindepth 2 -type d); do
+          for dir in $(find . -mindepth 2 -type d); do # Changed this line
           # Extract the path relative to src
-          rel_path="${dir#src/}"
-          component_type=$(echo $rel_path | cut -d'/' -f1)
-          component_name=$(echo $rel_path | cut -d'/' -f2)
+          rel_path="${dir#.}" # Changed this line
+          component_type=$(echo $rel_path | cut -d'/' -f2) # Adjusted field number
+          component_name=$(echo $rel_path | cut -d'/' -f3) # Adjusted field number
           echo "Component Type: $component_type"
           echo "Component Name: $component_name"
           case $component_type in
